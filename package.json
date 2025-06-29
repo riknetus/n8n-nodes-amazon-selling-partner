@@ -1,0 +1,65 @@
+{
+  "name": "n8n-nodes-amazon-selling-partner",
+  "version": "1.2.4",
+  "description": "Custom n8n node for the Amazon Selling Partner API",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && gulp build",
+    "dev": "tsc --watch",
+    "format": "prettier --write nodes credentials",
+    "lint": "eslint nodes credentials --ext .ts,.js",
+    "lint:fix": "eslint nodes credentials --ext .ts,.js --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --json --outputFile=test-results.json"
+  },
+  "files": [
+    "credentials",
+    "dist",
+    "nodes"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/AmazonSpApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/AmazonSellingPartner/AmazonSellingPartner.node.js"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/n8n-io/n8n-nodes-amazon-selling-partner.git"
+  },
+  "author": "n8n",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/n8n-io/n8n-nodes-amazon-selling-partner/issues"
+  },
+  "homepage": "https://github.com/n8n-io/n8n-nodes-amazon-selling-partner#readme",
+  "dependencies": {
+    "aws4": "^1.12.0",
+    "axios": "^1.6.8",
+    "papaparse": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^18.19.31",
+    "@types/papaparse": "^5.3.14",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-rules": "^1.23.1",
+    "gulp": "^4.0.2",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.2",
+    "n8n-workflow": "*",
+    "prettier": "^3.2.5",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "~4.8.4"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
