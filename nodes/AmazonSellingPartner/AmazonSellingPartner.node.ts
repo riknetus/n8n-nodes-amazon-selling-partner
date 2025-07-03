@@ -13,6 +13,8 @@ import { invoicesOperations, invoicesFields } from './descriptions/Invoices.desc
 import { getGstReport, getVatInvoiceReport, getVatInvoicePdfLinks } from './operations/Invoices.operations';
 import { shipmentsOperations, shipmentsFields } from './descriptions/Shipments.description';
 import { executeShipmentsOperation } from './operations/Shipments.operations';
+import { listingsOperations, listingsFields } from './descriptions/Listings.description';
+import { executeListingsOperation } from './operations/Listings.operations';
 
 export class AmazonSellingPartner implements INodeType {
 	description: INodeTypeDescription = {
@@ -64,6 +66,11 @@ export class AmazonSellingPartner implements INodeType {
 						value: 'shipments',
 						description: 'Confirm or update shipment information',
 					},
+					{
+						name: 'Listings',
+						value: 'listings',
+						description: 'List and manage product listings (ASINs/SKUs)',
+					},
 				],
 				default: 'orders',
 			},
@@ -73,6 +80,8 @@ export class AmazonSellingPartner implements INodeType {
 			...invoicesFields,
 			...shipmentsOperations,
 			...shipmentsFields,
+			...listingsOperations,
+			...listingsFields,
 		],
 	};
 
@@ -110,6 +119,10 @@ export class AmazonSellingPartner implements INodeType {
 					case 'shipments':
 						const shipmentResults = await executeShipmentsOperation.call(this, operation, i);
 						returnData.push(...shipmentResults);
+						break;
+					case 'listings':
+						const listingResults = await executeListingsOperation.call(this, operation, i);
+						returnData.push(...listingResults);
 						break;
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);

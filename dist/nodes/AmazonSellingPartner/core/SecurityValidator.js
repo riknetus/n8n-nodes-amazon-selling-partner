@@ -98,13 +98,11 @@ class SecurityValidator {
             {
                 field: 'createdAfter',
                 required: true,
-                type: 'date',
                 pattern: this.datePattern,
             },
             {
                 field: 'createdBefore',
                 required: true,
-                type: 'date',
                 pattern: this.datePattern,
             },
         ];

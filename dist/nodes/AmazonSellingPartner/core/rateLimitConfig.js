@@ -48,7 +48,8 @@ exports.ENDPOINT_TO_GROUP = [
     { pattern: /^\/orders\/v0\/orders\/[^\/]+$/, group: 'orders-detail' }, // getOrder
     { pattern: /^\/orders\/v0\/orders\/?(\?.*)?$/, group: 'orders-list' }, // getOrders
     { pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipment/, group: 'orders-update' },
-    { pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipmentStatus/, group: 'orders-update' },
+    { pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipmentConfirmation$/, group: 'orders-update' },
+    { pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipmentStatus$/, group: 'orders-update' },
     // Reports API patterns
     { pattern: /^\/reports\/2021-06-30\/reports\/?(\?.*)?$/, group: 'reports' }, // createReport, getReports
     { pattern: /^\/reports\/2021-06-30\/reports\/[^\/]+$/, group: 'reports' }, // getReport

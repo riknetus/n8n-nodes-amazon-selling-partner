@@ -3,25 +3,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeOrdersOperation = executeOrdersOperation;
 const n8n_workflow_1 = require("n8n-workflow");
 const SpApiRequest_1 = require("../helpers/SpApiRequest");
+const SecurityValidator_1 = require("../core/SecurityValidator");
 async function executeOrdersOperation(operation, itemIndex) {
     const returnData = [];
+    const nodeId = this.getNode().id;
     if (operation === 'getOrders') {
         // Get parameters
         const marketplaceIds = this.getNodeParameter('marketplaceIds', itemIndex);
         const createdAfter = this.getNodeParameter('createdAfter', itemIndex);
         const createdBefore = this.getNodeParameter('createdBefore', itemIndex);
         const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {});
-        // Validate date range
-        const afterDate = new Date(createdAfter);
-        const beforeDate = new Date(createdBefore);
-        const daysDiff = Math.ceil((beforeDate.getTime() - afterDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff > 30) {
-            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Date range cannot exceed 30 days', {
-                description: 'Amazon SP-API limits order queries to a maximum of 30 days',
-            });
+        // Security Validation
+        const marketplaceValidation = SecurityValidator_1.securityValidator.validateMarketplaceIds(marketplaceIds, nodeId);
+        if (!marketplaceValidation.isValid) {
+            throw new n8n_workflow_1.NodeOperationError(this.getNode(), marketplaceValidation.errors.join(', '));
         }
-        if (afterDate >= beforeDate) {
-            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Created After date must be before Created Before date');
+        const dateValidation = SecurityValidator_1.securityValidator.validateDateRange(createdAfter, createdBefore, nodeId);
+        if (!dateValidation.isValid) {
+            throw new n8n_workflow_1.NodeOperationError(this.getNode(), dateValidation.errors.join(', '));
         }
         // Build query parameters
         const queryParams = {
@@ -29,21 +28,22 @@ async function executeOrdersOperation(operation, itemIndex) {
             CreatedAfter: createdAfter,
             CreatedBefore: createdBefore,
         };
-        // Add optional parameters
-        if (additionalOptions.orderStatuses && additionalOptions.orderStatuses.length > 0) {
+        // Add optional parameters from additionalOptions
+        if (additionalOptions.orderStatuses?.length > 0) {
             queryParams.OrderStatuses = additionalOptions.orderStatuses;
         }
-        if (additionalOptions.fulfillmentChannels && additionalOptions.fulfillmentChannels.length > 0) {
+        if (additionalOptions.fulfillmentChannels?.length > 0) {
             queryParams.FulfillmentChannels = additionalOptions.fulfillmentChannels;
         }
-        if (additionalOptions.paymentMethods && additionalOptions.paymentMethods.length > 0) {
+        if (additionalOptions.paymentMethods?.length > 0) {
             queryParams.PaymentMethods = additionalOptions.paymentMethods;
         }
         if (additionalOptions.maxResultsPerPage) {
-            if (additionalOptions.maxResultsPerPage < 1 || additionalOptions.maxResultsPerPage > 100) {
+            const maxResults = additionalOptions.maxResultsPerPage;
+            if (maxResults < 1 || maxResults > 100) {
                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'MaxResultsPerPage must be between 1 and 100');
             }
-            queryParams.MaxResultsPerPage = additionalOptions.maxResultsPerPage;
+            queryParams.MaxResultsPerPage = maxResults;
         }
         const returnAll = additionalOptions.returnAll !== false;
         let nextToken;
@@ -105,10 +105,8 @@ async function executeOrdersOperation(operation, itemIndex) {
     // --- Get Order Details ---
     if (operation === 'getOrder') {
         const orderId = this.getNodeParameter('orderId', itemIndex);
-        // Security validation (reuse SecurityValidator if available)
-        // Simple regex: 3-7-7 format (e.g., 123-1234567-1234567)
         if (!/^\d{3}-\d{7}-\d{7}$/.test(orderId)) {
-            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Invalid Order ID format. Must be 3-7-7 (e.g., 123-1234567-1234567)');
+            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Invalid Order ID format');
         }
         try {
             const response = await SpApiRequest_1.SpApiRequest.makeRequest(this, {
@@ -130,7 +128,7 @@ async function executeOrdersOperation(operation, itemIndex) {
         const orderId = this.getNodeParameter('orderId', itemIndex);
         const returnAll = this.getNodeParameter('returnAll', itemIndex, true);
         if (!/^\d{3}-\d{7}-\d{7}$/.test(orderId)) {
-            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Invalid Order ID format. Must be 3-7-7 (e.g., 123-1234567-1234567)');
+            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Invalid Order ID format');
         }
         let nextToken;
         let allItems = [];
