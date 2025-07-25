@@ -447,4 +447,91 @@ describe('Finance API Integration Tests', () => {
 			}
 		}, 30000);
 	});
+
+	describe('List Transactions (Finances v2024-06-19)', () => {
+		it('should retrieve transactions from sandbox', async () => {
+			if (skipIfNoCredentials()) return;
+
+			const startDate = DateTime.now().minus({ days: 30 }).toISO();
+			const endDate = DateTime.now().toISO();
+
+			mockExecuteFunctions.getNodeParameter.mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'resource':
+						return 'finance';
+					case 'operation':
+						return 'listTransactions';
+					case 'postedAfter':
+						return startDate;
+					case 'postedBefore':
+						return endDate;
+					case 'marketplaceId':
+						return 'ATVPDKIKX0DER'; // US marketplace
+					case 'additionalOptions':
+						return { maxResultsPerPage: 50, returnAll: false };
+					default:
+						return undefined;
+				}
+			});
+
+			const result = await node.execute.call(mockExecuteFunctions);
+
+			expect(result).toBeDefined();
+			expect(Array.isArray(result[0])).toBe(true);
+			
+			// If no transactions found in sandbox, should return message
+			if (result[0].length === 1 && result[0][0].json.message) {
+				expect(result[0][0].json.message).toContain('No transactions found');
+			} else if (result[0].length > 0) {
+				// If transactions found, validate structure
+				const firstTransaction = result[0][0].json;
+				expect(firstTransaction).toBeDefined();
+				expect(typeof firstTransaction).toBe('object');
+			}
+		}, 30000);
+
+		it('should validate required postedAfter parameter', async () => {
+			if (skipIfNoCredentials()) return;
+
+			mockExecuteFunctions.getNodeParameter.mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'resource':
+						return 'finance';
+					case 'operation':
+						return 'listTransactions';
+					case 'postedAfter':
+						return ''; // Empty - should trigger validation error
+					case 'additionalOptions':
+						return {};
+					default:
+						return undefined;
+				}
+			});
+
+			await expect(node.execute.call(mockExecuteFunctions))
+				.rejects.toThrow(/Posted After date is required/);
+		});
+
+		it('should handle maxResultsPerPage validation', async () => {
+			if (skipIfNoCredentials()) return;
+
+			mockExecuteFunctions.getNodeParameter.mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'resource':
+						return 'finance';
+					case 'operation':
+						return 'listTransactions';
+					case 'postedAfter':
+						return DateTime.now().minus({ days: 7 }).toISO();
+					case 'additionalOptions':
+						return { maxResultsPerPage: 150 }; // Invalid - exceeds 100
+					default:
+						return undefined;
+				}
+			});
+
+			await expect(node.execute.call(mockExecuteFunctions))
+				.rejects.toThrow(/MaxResultsPerPage must be between 1 and 100/);
+		});
+	});
 }); 
