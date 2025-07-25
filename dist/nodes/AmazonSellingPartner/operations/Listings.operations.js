@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.executeListingsOperation = executeListingsOperation;
+exports.executeListingsOperation = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
 const SpApiRequest_1 = require("../helpers/SpApiRequest");
 const SecurityValidator_1 = require("../core/SecurityValidator");
@@ -464,3 +464,4 @@ async function executeListingsOperation(operation, itemIndex) {
     }
     return returnData;
 }
+exports.executeListingsOperation = executeListingsOperation;

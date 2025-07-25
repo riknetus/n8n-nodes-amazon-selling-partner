@@ -1,3 +1,5 @@
+/// <reference types="node" />
+/// <reference types="node" />
 interface EncryptionDetails {
     standard: string;
     initializationVector: string;

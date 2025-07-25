@@ -8,6 +8,10 @@ A production-grade n8n custom node for Amazon Selling Partner API with comprehen
 - **Orders Management**: Retrieve orders within date ranges with advanced filtering
 - **Order Details**: Fetch detailed information for a specific order by Order ID
 - **Order Items**: Retrieve all line items for a specific order, with automatic pagination
+- **Finance API**: Complete financial events, transaction history, and financial event groups
+- **Shipments Management**: Track and manage shipment operations and details
+- **Product Listings**: Manage product catalog and inventory operations
+- **Invoices & Reports**: Generate and retrieve invoices and financial reports
 - **Simplified Authentication**: LWA (Login with Amazon) credentials only - AWS credentials optional
 - **Multi-Marketplace Support**: Support for all Amazon marketplaces globally
 - **Automatic Pagination**: Handle large result sets seamlessly
@@ -122,6 +126,62 @@ If your application requires AWS SigV4 signing:
     "fulfillmentChannels": ["AFN"],
     "maxResultsPerPage": 50,
     "returnAll": true
+  }
+}
+```
+
+### Finance API Operations
+
+#### List Financial Event Groups
+```json
+{
+  "resource": "finance",
+  "operation": "listFinancialEventGroups",
+  "financialEventGroupStartedAfter": "2024-01-01T00:00:00Z",
+  "financialEventGroupStartedBefore": "2024-01-31T23:59:59Z",
+  "additionalOptions": {
+    "maxResultsPerPage": 100,
+    "returnAll": true
+  }
+}
+```
+
+#### List Financial Events
+```json
+{
+  "resource": "finance",
+  "operation": "listFinancialEvents",
+  "postedAfter": "2024-01-01T00:00:00Z",
+  "postedBefore": "2024-01-31T23:59:59Z",
+  "additionalOptions": {
+    "maxResultsPerPage": 100,
+    "returnAll": false
+  }
+}
+```
+
+#### List Financial Events by Group ID
+```json
+{
+  "resource": "finance",
+  "operation": "listFinancialEventsByGroupId",
+  "eventGroupId": "12345678901234567890123456789012",
+  "postedAfter": "2024-01-01T00:00:00Z",
+  "additionalOptions": {
+    "maxResultsPerPage": 50,
+    "returnAll": true
+  }
+}
+```
+
+#### List Financial Events by Order ID
+```json
+{
+  "resource": "finance",
+  "operation": "listFinancialEventsByOrderId",
+  "orderId": "123-1234567-1234567",
+  "additionalOptions": {
+    "returnAll": false
   }
 }
 ```

@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getGstReport = getGstReport;
-exports.getVatInvoiceReport = getVatInvoiceReport;
-exports.getVatInvoicePdfLinks = getVatInvoicePdfLinks;
+exports.getVatInvoicePdfLinks = exports.getVatInvoiceReport = exports.getGstReport = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
 const SpApiRequest_1 = require("../helpers/SpApiRequest");
 const ReportDownloader_1 = require("../helpers/ReportDownloader");
@@ -38,6 +36,7 @@ async function getGstReport(index) {
     }
     return await processReportRequest.call(this, reportRequest, outputOptions, advancedOptions);
 }
+exports.getGstReport = getGstReport;
 async function getVatInvoiceReport(index) {
     const reportType = this.getNodeParameter('reportType', index);
     const marketplaceId = this.getNodeParameter('marketplaceId', index);
@@ -78,6 +77,7 @@ async function getVatInvoiceReport(index) {
     }
     return await processReportRequest.call(this, reportRequest, outputOptions, advancedOptions);
 }
+exports.getVatInvoiceReport = getVatInvoiceReport;
 async function getVatInvoicePdfLinks(index) {
     const marketplaceId = this.getNodeParameter('marketplaceId', index);
     const outputOptions = this.getNodeParameter('outputOptions', index, {});
@@ -89,6 +89,7 @@ async function getVatInvoicePdfLinks(index) {
     };
     return await processReportRequest.call(this, reportRequest, outputOptions, advancedOptions);
 }
+exports.getVatInvoicePdfLinks = getVatInvoicePdfLinks;
 async function processReportRequest(reportRequest, outputOptions, advancedOptions) {
     const maxPollTimeMinutes = advancedOptions.maxPollTimeMinutes || 10;
     const pollIntervalSeconds = advancedOptions.pollIntervalSeconds || 30;

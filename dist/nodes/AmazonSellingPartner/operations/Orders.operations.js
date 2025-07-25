@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.executeOrdersOperation = executeOrdersOperation;
+exports.executeOrdersOperation = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
 const SpApiRequest_1 = require("../helpers/SpApiRequest");
 const SecurityValidator_1 = require("../core/SecurityValidator");
@@ -78,7 +78,7 @@ async function executeOrdersOperation(operation, itemIndex) {
         // Convert orders to n8n items
         for (const order of allOrders) {
             returnData.push({
-                json: order, // Cast to any to satisfy IDataObject requirement
+                json: order,
                 pairedItem: {
                     item: itemIndex,
                 },
@@ -175,3 +175,4 @@ async function executeOrdersOperation(operation, itemIndex) {
     }
     return returnData;
 }
+exports.executeOrdersOperation = executeOrdersOperation;

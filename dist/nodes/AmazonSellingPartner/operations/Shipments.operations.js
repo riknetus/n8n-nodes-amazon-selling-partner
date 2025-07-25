@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.executeShipmentsOperation = executeShipmentsOperation;
+exports.executeShipmentsOperation = void 0;
 const n8n_workflow_1 = require("n8n-workflow");
 const SpApiRequest_1 = require("../helpers/SpApiRequest");
 const SecurityValidator_1 = require("../core/SecurityValidator");
@@ -14,6 +14,7 @@ async function executeShipmentsOperation(operation, itemIndex) {
             throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Unknown shipments operation: ${operation}`);
     }
 }
+exports.executeShipmentsOperation = executeShipmentsOperation;
 async function confirmShipment(index) {
     const orderId = this.getNodeParameter('orderId', index);
     const marketplaceId = this.getNodeParameter('marketplaceId', index);
@@ -32,7 +33,7 @@ async function confirmShipment(index) {
     const body = {
         marketplaceId,
         packageDetail: {
-            packageReferenceId: `n8n-${this.getExecutionId()}-${index}`, // Idempotency token
+            packageReferenceId: `n8n-${this.getExecutionId()}-${index}`,
             carrierCode,
             trackingNumber,
             shipDate,

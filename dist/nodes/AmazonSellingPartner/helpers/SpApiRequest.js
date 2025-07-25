@@ -110,7 +110,7 @@ class SpApiRequest {
                 url: url.toString(),
                 headers: finalHeaders,
                 data: options.body,
-                timeout: 60000, // 60 seconds
+                timeout: 60000,
                 validateStatus: (status) => status < 500, // Don't throw on 4xx errors
             };
             // Set response type for non-JSON responses

@@ -15,6 +15,8 @@ import { shipmentsOperations, shipmentsFields } from './descriptions/Shipments.d
 import { executeShipmentsOperation } from './operations/Shipments.operations';
 import { listingsOperations, listingsFields } from './descriptions/Listings.description';
 import { executeListingsOperation } from './operations/Listings.operations';
+import { financeOperations, financeFields } from './descriptions/Finance.description';
+import { executeFinanceOperation } from './operations/Finance.operations';
 
 export class AmazonSellingPartner implements INodeType {
 	description: INodeTypeDescription = {
@@ -71,6 +73,11 @@ export class AmazonSellingPartner implements INodeType {
 						value: 'listings',
 						description: 'List and manage product listings (ASINs/SKUs)',
 					},
+					{
+						name: 'Finance',
+						value: 'finance',
+						description: 'Retrieve financial events, wallet transactions, and payment data',
+					},
 				],
 				default: 'orders',
 			},
@@ -82,6 +89,8 @@ export class AmazonSellingPartner implements INodeType {
 			...shipmentsFields,
 			...listingsOperations,
 			...listingsFields,
+			...financeOperations,
+			...financeFields,
 		],
 	};
 
@@ -123,6 +132,10 @@ export class AmazonSellingPartner implements INodeType {
 					case 'listings':
 						const listingResults = await executeListingsOperation.call(this, operation, i);
 						returnData.push(...listingResults);
+						break;
+					case 'finance':
+						const financeResults = await executeFinanceOperation.call(this, operation, i);
+						returnData.push(...financeResults);
 						break;
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);

@@ -164,7 +164,7 @@ class SecurityValidator {
         for (const pattern of this.suspiciousPatterns) {
             if (pattern.test(input)) {
                 AuditLogger_1.auditLogger.logSuspiciousActivity(nodeId, 'malicious_input_detected', {
-                    input: input.substring(0, 100), // Log first 100 chars only
+                    input: input.substring(0, 100),
                     pattern: pattern.toString(),
                     attackVector: 'input_injection',
                 });
