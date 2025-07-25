@@ -337,6 +337,104 @@ async function executeFinanceOperation(operation, itemIndex) {
             });
         }
     }
+    if (operation === 'listTransactions') {
+        // Get parameters
+        const postedAfter = this.getNodeParameter('postedAfter', itemIndex);
+        const postedBefore = this.getNodeParameter('postedBefore', itemIndex);
+        const marketplaceId = this.getNodeParameter('marketplaceId', itemIndex);
+        const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {});
+        // Validation
+        if (!postedAfter) {
+            throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'Posted After date is required');
+        }
+        // Security Validation for date range
+        if (postedAfter && postedBefore) {
+            const dateValidation = SecurityValidator_1.securityValidator.validateDateRange(postedAfter, postedBefore, nodeId);
+            if (!dateValidation.isValid) {
+                throw new n8n_workflow_1.NodeOperationError(this.getNode(), dateValidation.errors.join(', '));
+            }
+        }
+        // Build query parameters
+        const queryParams = {
+            postedAfter,
+        };
+        if (postedBefore) {
+            queryParams.postedBefore = postedBefore;
+        }
+        if (marketplaceId) {
+            queryParams.marketplaceId = marketplaceId;
+        }
+        if (additionalOptions.maxResultsPerPage) {
+            const maxResults = additionalOptions.maxResultsPerPage;
+            if (maxResults < 1 || maxResults > 100) {
+                throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'MaxResultsPerPage must be between 1 and 100');
+            }
+            queryParams.maxResultsPerPage = maxResults;
+        }
+        if (additionalOptions.nextToken) {
+            queryParams.nextToken = additionalOptions.nextToken;
+        }
+        const returnAll = additionalOptions.returnAll !== false;
+        let nextToken;
+        let allTransactions = [];
+        // Handle pagination
+        do {
+            if (nextToken) {
+                queryParams.nextToken = nextToken;
+            }
+            try {
+                const response = await SpApiRequest_1.SpApiRequest.makeRequest(this, {
+                    method: 'GET',
+                    endpoint: '/finances/2024-06-19/transactions',
+                    query: queryParams,
+                });
+                const transactions = response.data.payload?.transactions || [];
+                allTransactions = allTransactions.concat(transactions);
+                nextToken = response.data.payload?.nextToken;
+                // If not returning all results, break after first page
+                if (!returnAll) {
+                    break;
+                }
+            }
+            catch (error) {
+                if (error instanceof n8n_workflow_1.NodeOperationError) {
+                    throw error;
+                }
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Failed to retrieve transactions: ${errorMessage}`);
+            }
+        } while (nextToken && returnAll);
+        // Convert transactions to n8n items
+        for (const transaction of allTransactions) {
+            returnData.push({
+                json: transaction,
+                pairedItem: {
+                    item: itemIndex,
+                },
+            });
+        }
+        // If no transactions found, return empty result with metadata
+        if (allTransactions.length === 0) {
+            returnData.push({
+                json: {
+                    message: 'No transactions found for the specified criteria',
+                    searchCriteria: {
+                        postedAfter,
+                        postedBefore,
+                        marketplaceId,
+                        ...additionalOptions,
+                    },
+                },
+                pairedItem: {
+                    item: itemIndex,
+                },
+            });
+        }
+    }
+    // Handle unsupported operations
+    if (!['listFinancialEventGroups', 'listFinancialEventsByGroupId', 'listFinancialEventsByOrderId', 'listFinancialEvents', 'listTransactions'].includes(operation)) {
+        throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Operation "${operation}" is not supported`);
+    }
     return returnData;
 }
 exports.executeFinanceOperation = executeFinanceOperation;

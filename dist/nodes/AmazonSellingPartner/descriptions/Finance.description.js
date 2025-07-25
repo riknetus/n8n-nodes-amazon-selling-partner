@@ -37,6 +37,12 @@ exports.financeOperations = [
                 description: 'Retrieve financial events within a specified date range',
                 action: 'List financial events',
             },
+            {
+                name: 'List Transactions',
+                value: 'listTransactions',
+                description: 'Retrieve transactions for the given parameters (Finances v2024-06-19)',
+                action: 'List transactions',
+            },
         ],
         default: 'listFinancialEventGroups',
     },
@@ -259,6 +265,83 @@ exports.financeFields = [
                 type: 'boolean',
                 default: true,
                 description: 'Whether to return all results by automatically handling pagination',
+            },
+        ],
+    },
+    // List Transactions operation fields
+    {
+        displayName: 'Posted After',
+        name: 'postedAfter',
+        type: 'dateTime',
+        displayOptions: {
+            show: {
+                operation: ['listTransactions'],
+            },
+        },
+        default: '',
+        description: 'A date used for selecting transactions posted after (or on) a specified date. Format: ISO 8601',
+        required: true,
+    },
+    {
+        displayName: 'Posted Before',
+        name: 'postedBefore',
+        type: 'dateTime',
+        displayOptions: {
+            show: {
+                operation: ['listTransactions'],
+            },
+        },
+        default: '',
+        description: 'A date used for selecting transactions posted before (but not on) a specified date. Format: ISO 8601',
+    },
+    {
+        displayName: 'Marketplace ID',
+        name: 'marketplaceId',
+        type: 'string',
+        displayOptions: {
+            show: {
+                operation: ['listTransactions'],
+            },
+        },
+        default: '',
+        description: 'The marketplace identifier for which transactions should be returned',
+    },
+    {
+        displayName: 'Additional Options',
+        name: 'additionalOptions',
+        type: 'collection',
+        placeholder: 'Add Option',
+        displayOptions: {
+            show: {
+                operation: ['listTransactions'],
+            },
+        },
+        default: {},
+        options: [
+            {
+                displayName: 'Max Results Per Page',
+                name: 'maxResultsPerPage',
+                type: 'number',
+                typeOptions: {
+                    minValue: 1,
+                    maxValue: 100,
+                },
+                default: 100,
+                description: 'Maximum number of results to return per page (1-100)',
+            },
+            {
+                displayName: 'Return All Results',
+                name: 'returnAll',
+                type: 'boolean',
+                default: true,
+                description: 'Whether to return all results by automatically handling pagination',
+            },
+            {
+                displayName: 'Next Token',
+                name: 'nextToken',
+                type: 'string',
+                default: '',
+                description: 'A string token returned in the response to your previous request for the next page of results',
             },
         ],
     },

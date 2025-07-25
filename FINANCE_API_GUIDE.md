@@ -129,6 +129,38 @@ Retrieves financial events related to a specific order.
 - Investigate order discrepancies
 - Customer service inquiries
 
+### 5. List Transactions (Finances v2024-06-19)
+
+Retrieves transactions for the given parameters. This is the newest Finance API endpoint using the 2024-06-19 version.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `postedAfter` | ISO 8601 DateTime | Yes | Start date for transactions |
+| `postedBefore` | ISO 8601 DateTime | No | End date for transactions |
+| `marketplaceId` | String | No | Marketplace identifier |
+| `maxResultsPerPage` | Integer (1-100) | No | Page size (default: 100) |
+| `returnAll` | Boolean | No | Return all pages (default: false) |
+| `nextToken` | String | No | Pagination token |
+
+#### Features
+- **Latest API Version**: Uses Finances v2024-06-19 (newest available)
+- **Enhanced Transaction Data**: More detailed transaction information
+- **Improved Performance**: Better response times and data structure
+- **Rate Limiting**: 0.5 requests per second with burst of 10
+
+#### Use Cases
+- Modern financial reporting with latest data structure
+- Enhanced transaction analysis
+- Improved reconciliation processes
+- Better integration with newer Amazon systems
+
+#### Notes
+- Financial events might not include orders from the last 48 hours
+- This endpoint provides more detailed transaction data than the v0 endpoints
+- Recommended for new integrations requiring the most up-to-date financial data
+
 ## Data Structures
 
 ### Financial Event Group

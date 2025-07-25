@@ -186,6 +186,21 @@ If your application requires AWS SigV4 signing:
 }
 ```
 
+#### List Transactions (Finances v2024-06-19)
+```json
+{
+  "resource": "finance",
+  "operation": "listTransactions",
+  "postedAfter": "2024-01-01T00:00:00Z",
+  "postedBefore": "2024-01-31T23:59:59Z",
+  "marketplaceId": "ATVPDKIKX0DER",
+  "additionalOptions": {
+    "maxResultsPerPage": 100,
+    "returnAll": true
+  }
+}
+```
+
 ## Supported Marketplaces
 
 ### North America
