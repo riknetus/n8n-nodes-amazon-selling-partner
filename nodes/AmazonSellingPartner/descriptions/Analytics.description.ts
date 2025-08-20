@@ -1,5 +1,5 @@
 import { INodeProperties } from 'n8n-workflow';
-import { ANALYTICS_MODES, SCHEMA_VERSIONS, METRIC_CATEGORIES, DATE_PRESETS, SUPPORTED_CURRENCIES } from '../operations/analytics/constants';
+import { SCHEMA_VERSIONS, SUPPORTED_CURRENCIES } from '../operations/analytics/constants';
 
 export const analyticsOperations: INodeProperties[] = [
 	{
@@ -258,7 +258,7 @@ export const analyticsFields: INodeProperties[] = [
 				type: 'boolean',
 				displayOptions: {
 					show: {
-						'/filters.parentAsin': [{ _cnd: { not: { eq: '' } } }],
+						'/filters.parentAsin': [{ _cnd: { exists: true } }],
 					},
 				},
 				default: true,
@@ -282,7 +282,7 @@ export const analyticsFields: INodeProperties[] = [
 				type: 'boolean',
 				displayOptions: {
 					show: {
-						'/filters.skus': [{ _cnd: { not: { eq: [] } } }],
+						'/filters.skus': [{ _cnd: { exists: true } }],
 					},
 				},
 				default: true,

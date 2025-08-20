@@ -11,12 +11,9 @@ import { auditLogger } from '../core/AuditLogger';
 import {
 	ANALYTICS_METRICS,
 	SCHEMA_VERSIONS,
-	DATE_PRESETS,
 	DEFAULT_SETTINGS,
 	buildDataKioskEndpoint,
-	buildAnalyticsEndpoint,
 	REPORTS_FALLBACK_MAPPING,
-	ANALYTICS_MODES,
 } from './analytics/constants';
 
 // Core interfaces
@@ -43,6 +40,11 @@ interface AnalyticsResponse {
 		totalResults?: number;
 		currency?: string;
 		timezone?: string;
+		reportId?: string;
+		reportType?: string;
+		generatedAt?: string;
+		chunked?: boolean;
+		totalChunks?: number;
 	};
 }
 
@@ -83,7 +85,7 @@ export async function executeAnalyticsOperation(
 // Validate Analytics Access
 async function validateAnalyticsAccess(
 	this: IExecuteFunctions,
-	index: number,
+	_index: number,
 ): Promise<INodeExecutionData[]> {
 	const nodeId = this.getNode().id;
 	
@@ -472,7 +474,7 @@ async function executeReportsMode(this: IExecuteFunctions, params: any): Promise
 }
 
 // Helper functions
-function calculateDateRange(preset: string, customDays: number, timezone: string): { startDate: string; endDate: string } {
+function calculateDateRange(preset: string, customDays: number, _timezone: string): { startDate: string; endDate: string } {
 	const now = new Date();
 	let startDate: Date, endDate: Date;
 
@@ -734,25 +736,25 @@ function applySortingAndLimiting(data: NormalizedRow[], sortingLimiting: any): N
 	return sortedData;
 }
 
-async function resolveSKUsToASINs(this: IExecuteFunctions, skus: string[], marketplaceIds: string[]): Promise<string[]> {
+async function resolveSKUsToASINs(this: IExecuteFunctions, skus: string[], _marketplaceIds: string[]): Promise<string[]> {
 	// This would use the Listings API to resolve SKUs to ASINs
 	// For now, return the SKUs as-is (implement full resolution as needed)
 	return skus;
 }
 
-async function joinListingData(this: IExecuteFunctions, data: NormalizedRow[], marketplaceIds: string[]): Promise<NormalizedRow[]> {
+async function joinListingData(this: IExecuteFunctions, data: NormalizedRow[], _marketplaceIds: string[]): Promise<NormalizedRow[]> {
 	// This would join with Listings API data to add title, brand, category
 	// For now, return data as-is (implement full join as needed)
 	return data;
 }
 
-function normalizeCurrency(data: NormalizedRow[], baseCurrency: string, exchangeRates: Record<string, number>): NormalizedRow[] {
+function normalizeCurrency(data: NormalizedRow[], _baseCurrency: string, _exchangeRates: Record<string, number>): NormalizedRow[] {
 	// This would normalize currency values using exchange rates
 	// For now, return data as-is (implement full normalization as needed)
 	return data;
 }
 
-function parseReportCSV(csvData: string, params: any): AnalyticsDataPoint[] {
+function parseReportCSV(_csvData: string, _params: any): AnalyticsDataPoint[] {
 	// This would parse the Reports API CSV and convert to our format
 	// For now, return empty array (implement full CSV parsing as needed)
 	return [];
@@ -780,7 +782,7 @@ async function generateOutput(this: IExecuteFunctions, data: NormalizedRow[], pa
 			},
 			binary: {
 				data: {
-					data: Buffer.from(csv),
+					data: Buffer.from(csv).toString('base64'),
 					mimeType: 'text/csv',
 					fileName: filename,
 				},

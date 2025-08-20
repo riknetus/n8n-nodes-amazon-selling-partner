@@ -12,6 +12,8 @@ const Listings_description_1 = require("./descriptions/Listings.description");
 const Listings_operations_1 = require("./operations/Listings.operations");
 const Finance_description_1 = require("./descriptions/Finance.description");
 const Finance_operations_1 = require("./operations/Finance.operations");
+const Analytics_description_1 = require("./descriptions/Analytics.description");
+const Analytics_operations_1 = require("./operations/Analytics.operations");
 class AmazonSellingPartner {
     description = {
         displayName: 'Amazon Selling Partner',
@@ -72,6 +74,11 @@ class AmazonSellingPartner {
                         value: 'finance',
                         description: 'Retrieve financial events, wallet transactions, and payment data',
                     },
+                    {
+                        name: 'Analytics',
+                        value: 'analytics',
+                        description: 'Get sales and traffic analytics data by ASIN using Data Kiosk or Reports API',
+                    },
                 ],
                 default: 'orders',
             },
@@ -85,6 +92,8 @@ class AmazonSellingPartner {
             ...Listings_description_1.listingsFields,
             ...Finance_description_1.financeOperations,
             ...Finance_description_1.financeFields,
+            ...Analytics_description_1.analyticsOperations,
+            ...Analytics_description_1.analyticsFields,
         ],
     };
     async execute() {
@@ -127,6 +136,10 @@ class AmazonSellingPartner {
                     case 'finance':
                         const financeResults = await Finance_operations_1.executeFinanceOperation.call(this, operation, i);
                         returnData.push(...financeResults);
+                        break;
+                    case 'analytics':
+                        const analyticsResults = await Analytics_operations_1.executeAnalyticsOperation.call(this, operation, i);
+                        returnData.push(...analyticsResults);
                         break;
                     default:
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
