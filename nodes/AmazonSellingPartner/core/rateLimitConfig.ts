@@ -34,6 +34,13 @@ export const RATE_LIMIT_GROUPS: Record<string, RateLimitConfig> = {
 		description: 'Reports API operations: createReport, getReport, getReportDocument'
 	},
 	
+	// Analytics API - Data Kiosk and Analytics operations
+	'analytics': {
+		rate: 0.0167, // 1 request per 60 seconds (conservative, similar to reports)
+		burst: 10,
+		description: 'Analytics and Data Kiosk API operations: salesAndTraffic, etc.'
+	},
+	
 	// Default fallback for unclassified endpoints
 	'default': {
 		rate: 0.5,
@@ -60,6 +67,11 @@ export const ENDPOINT_TO_GROUP: Array<{ pattern: RegExp; group: string }> = [
 	{ pattern: /^\/reports\/2021-06-30\/reports\/?(\?.*)?$/, group: 'reports' }, // createReport, getReports
 	{ pattern: /^\/reports\/2021-06-30\/reports\/[^\/]+$/, group: 'reports' }, // getReport
 	{ pattern: /^\/reports\/2021-06-30\/documents\/[^\/]+$/, group: 'reports' }, // getReportDocument
+	
+	// Analytics API patterns
+	{ pattern: /^\/analytics\/\d{4}-\d{2}-\d{2}\/.*$/, group: 'analytics' }, // Analytics API endpoints
+	{ pattern: /^\/dataKiosk\/\d{4}-\d{2}-\d{2}\/analytics\/.*$/, group: 'analytics' }, // Data Kiosk Analytics endpoints
+	{ pattern: /^\/dataKiosk\/\d{4}-\d{2}-\d{2}\/salesAndTraffic.*$/, group: 'analytics' }, // Data Kiosk Sales & Traffic
 	
 	// Add more patterns as needed for other APIs
 ];
