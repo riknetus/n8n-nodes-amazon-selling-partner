@@ -663,4 +663,107 @@ describe('Analytics Operations', () => {
 				.toThrow('Report generation timeout');
 		}, 10000); // Increase timeout for this test
 	});
+
+	describe('Default metricsSelection behavior', () => {
+		it('should handle empty metricsSelection with fallback defaults', async () => {
+			// Mock the execute functions with empty metricsSelection
+			mockExecuteFunctions.getNodeParameter
+				.mockImplementation((paramName: string, index: number, defaultValue?: any) => {
+					const params: Record<string, any> = {
+						marketplaceIds: ['ATVPDKIKX0DER'],
+						dateRangeType: 'relative',
+						datePreset: 'last7Days',
+						granularity: 'DAILY',
+						timezone: 'UTC',
+						metricsSelection: {}, // Empty object should trigger fallback
+						filters: {},
+						sortingLimiting: {},
+						outputOptions: {},
+						advancedOptions: { analyticsMode: 'dataKiosk' },
+					};
+					return params[paramName] || defaultValue;
+				});
+
+			// Mock successful API response
+			(SpApiRequest.makeRequest as jest.Mock).mockResolvedValue({
+				data: {
+					results: [
+						{
+							asin: 'B123456789',
+							marketplaceId: 'ATVPDKIKX0DER',
+							date: '2024-01-01',
+							metrics: {
+								sessions: 100,
+								pageViews: 150,
+								unitsOrdered: 5,
+								orderedProductSales: 99.95,
+								unitSessionPercentage: 5.0,
+							},
+						},
+					],
+				},
+			});
+
+			const result = await executeAnalyticsOperation.call(mockExecuteFunctions, 'salesAndTrafficByAsin', 0);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].json).toHaveProperty('asin', 'B123456789');
+			expect(result[0].json).toHaveProperty('sessions', 100);
+			expect(result[0].json).toHaveProperty('pageViews', 150);
+			expect(result[0].json).toHaveProperty('unitsOrdered', 5);
+			expect(result[0].json).toHaveProperty('orderedProductSales', 99.95);
+			expect(result[0].json).toHaveProperty('unitSessionPercentage', 5.0);
+		});
+
+		it('should handle legacy array format in metricsSelection', async () => {
+			// Mock the execute functions with legacy array format
+			mockExecuteFunctions.getNodeParameter
+				.mockImplementation((paramName: string, index: number, defaultValue?: any) => {
+					const params: Record<string, any> = {
+						marketplaceIds: ['ATVPDKIKX0DER'],
+						dateRangeType: 'relative',
+						datePreset: 'last7Days',
+						granularity: 'DAILY',
+						timezone: 'UTC',
+						metricsSelection: {
+							// Legacy incorrect format (arrays directly)
+							trafficMetrics: ['sessions'],
+							salesMetrics: ['unitsOrdered'],
+							conversionMetrics: ['unitSessionPercentage'],
+						},
+						filters: {},
+						sortingLimiting: {},
+						outputOptions: {},
+						advancedOptions: { analyticsMode: 'dataKiosk' },
+					};
+					return params[paramName] || defaultValue;
+				});
+
+			// Mock successful API response
+			(SpApiRequest.makeRequest as jest.Mock).mockResolvedValue({
+				data: {
+					results: [
+						{
+							asin: 'B123456789',
+							marketplaceId: 'ATVPDKIKX0DER',
+							date: '2024-01-01',
+							metrics: {
+								sessions: 100,
+								unitsOrdered: 5,
+								unitSessionPercentage: 5.0,
+							},
+						},
+					],
+				},
+			});
+
+			const result = await executeAnalyticsOperation.call(mockExecuteFunctions, 'salesAndTrafficByAsin', 0);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].json).toHaveProperty('asin', 'B123456789');
+			expect(result[0].json).toHaveProperty('sessions', 100);
+			expect(result[0].json).toHaveProperty('unitsOrdered', 5);
+			expect(result[0].json).toHaveProperty('unitSessionPercentage', 5.0);
+		});
+	});
 });
