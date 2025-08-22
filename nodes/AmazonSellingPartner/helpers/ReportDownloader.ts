@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { createDecipheriv } from 'crypto';
+import { gunzipSync } from 'zlib';
 import { NodeOperationError } from 'n8n-workflow';
 
 interface EncryptionDetails {
@@ -39,10 +40,17 @@ export class ReportDownloader {
 				data = this.decryptDocument(data, document.encryptionDetails);
 			}
 
-			// TODO: Add decompression support if needed
-			// if (document.compressionAlgorithm === 'GZIP') {
-			//   data = await this.decompressGzip(data);
-			// }
+			// Decompress if needed
+			if (document.compressionAlgorithm === 'GZIP') {
+				try {
+					data = gunzipSync(data);
+				} catch (err: any) {
+					throw new NodeOperationError(
+						{ id: nodeId || 'unknown', name: 'ReportDownloader', type: 'helper' } as any,
+						`Failed to decompress GZIP report: ${err?.message || 'Unknown error'}`
+					);
+				}
+			}
 
 			return data;
 		} catch (error) {

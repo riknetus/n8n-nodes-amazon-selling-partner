@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportDownloader = void 0;
 const axios_1 = __importDefault(require("axios"));
 const crypto_1 = require("crypto");
+const zlib_1 = require("zlib");
 const n8n_workflow_1 = require("n8n-workflow");
 class ReportDownloader {
     /**
@@ -25,10 +26,15 @@ class ReportDownloader {
             if (document.encryptionDetails) {
                 data = this.decryptDocument(data, document.encryptionDetails);
             }
-            // TODO: Add decompression support if needed
-            // if (document.compressionAlgorithm === 'GZIP') {
-            //   data = await this.decompressGzip(data);
-            // }
+            // Decompress if needed
+            if (document.compressionAlgorithm === 'GZIP') {
+                try {
+                    data = (0, zlib_1.gunzipSync)(data);
+                }
+                catch (err) {
+                    throw new n8n_workflow_1.NodeOperationError({ id: nodeId || 'unknown', name: 'ReportDownloader', type: 'helper' }, `Failed to decompress GZIP report: ${err?.message || 'Unknown error'}`);
+                }
+            }
             return data;
         }
         catch (error) {

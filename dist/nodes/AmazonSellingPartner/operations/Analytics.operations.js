@@ -347,13 +347,17 @@ async function executeReportsMode(params) {
     });
     // Download and parse report
     const reportData = await ReportDownloader_1.ReportDownloader.downloadReportDocument(documentResponse.data);
-    const parsedData = parseReportCSV(reportData.toString(), params);
+    const parsedResult = parseReportCSV(reportData.toString(), params);
+    // Handle both array and object return types
+    const parsedData = Array.isArray(parsedResult) ? parsedResult : parsedResult.data;
+    const csvDiagnostics = Array.isArray(parsedResult) ? null : parsedResult.diagnostics;
     return {
         data: parsedData,
         metadata: {
             reportId,
             reportType,
             generatedAt: reportStatus.createdTime,
+            ...(csvDiagnostics && { csvParsing: csvDiagnostics }),
         },
     };
 }
@@ -615,10 +619,171 @@ function normalizeCurrency(data, _baseCurrency, _exchangeRates) {
     // For now, return data as-is (implement full normalization as needed)
     return data;
 }
-function parseReportCSV(_csvData, _params) {
-    // This would parse the Reports API CSV and convert to our format
-    // For now, return empty array (implement full CSV parsing as needed)
-    return [];
+function parseReportCSV(csvData, params) {
+    // Strip BOM and normalize newlines
+    const text = csvData.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+    const delimiter = text.includes('\t') ? '\t' : ',';
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    // Simple CSV splitter with quote support
+    function split(line) {
+        if (delimiter === '\t')
+            return line.split('\t');
+        const out = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                }
+                else {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (ch === delimiter && !inQuotes) {
+                out.push(cur);
+                cur = '';
+            }
+            else {
+                cur += ch;
+            }
+        }
+        out.push(cur);
+        return out.map(s => s.trim());
+    }
+    // Find header row (look for ASIN + Sessions/Page Views)
+    let headerIdx = lines.findIndex(l => /asin/i.test(l) && (/(^|[^a-z])sessions([^a-z]|$)/i.test(l) || /page[\s-]*views/i.test(l)));
+    if (headerIdx === -1 && lines.length > 0)
+        headerIdx = 0;
+    if (headerIdx === -1)
+        return [];
+    const rawHeaders = split(lines[headerIdx]);
+    const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const headers = rawHeaders.map(h => norm(h));
+    // Column helpers
+    const idx = (...cands) => {
+        for (const c of cands) {
+            const i = headers.indexOf(c);
+            if (i !== -1)
+                return i;
+        }
+        return -1;
+    };
+    const asinIdx = idx('asin', 'childasin');
+    const dateIdx = idx('date');
+    // Metric indices with header variations
+    const col = {
+        sessions: idx('sessions'),
+        pageViews: idx('pageviews'),
+        pageViewsPerSession: idx('pageviewspersession', 'pageviewspervisit'),
+        sessionsPercent: idx('sessionspercent', 'sessionpercentage'),
+        pageViewsPercent: idx('pageviewspercent', 'pageviewspercentage'),
+        unitsOrdered: idx('unitsordered'),
+        unitsOrderedB2B: idx('unitsorderedb2b'),
+        orderedProductSales: idx('orderedproductsales'),
+        orderedProductSalesB2B: idx('orderedproductsalesb2b'),
+        unitSessionPercentage: idx('unitsessionpercentage'),
+        unitSessionPercentageB2B: idx('unitsessionpercentageb2b'),
+        buyBoxPercentage: idx('buyboxpercentage', 'featuredbuyboxpercentage', 'buyboxwins'),
+        sku: idx('sku'),
+        parentAsin: idx('parentasin'),
+    };
+    // Parsers
+    const toNum = (v) => {
+        if (!v)
+            return null;
+        let s = v.replace(/[\s]/g, '').replace(/[^\d.,-]/g, '');
+        // Remove thousands separators conservatively
+        if (s.indexOf(',') !== -1 && s.indexOf('.') !== -1)
+            s = s.replace(/,/g, '');
+        else if (delimiter === ',' && s.indexOf(',') !== -1 && s.indexOf('.') === -1)
+            s = s.replace(/,/g, '.');
+        else
+            s = s.replace(/,/g, '');
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : null;
+    };
+    const toPercent = (v) => {
+        if (!v)
+            return null;
+        const hasPct = v.includes('%');
+        const n = toNum(v);
+        if (n === null)
+            return null;
+        // Keep percentages as 0–100 scale for consistency in output
+        return hasPct ? n : (n <= 1 ? n * 100 : n);
+    };
+    const toCurrency = (v) => toNum(v);
+    const out = [];
+    for (let i = headerIdx + 1; i < lines.length; i++) {
+        const rowStr = lines[i];
+        if (!rowStr)
+            continue;
+        // Skip grand/summary rows
+        if (/^total\b/i.test(rowStr) || /^grand\s*total\b/i.test(rowStr))
+            continue;
+        const vals = split(rowStr);
+        const get = (i) => (i >= 0 && i < vals.length ? vals[i] : '');
+        const asin = asinIdx !== -1 ? get(asinIdx) : '';
+        if (!asin || /^total$/i.test(asin))
+            continue;
+        const dateRaw = dateIdx !== -1 ? get(dateIdx) : '';
+        const dateIso = dateRaw ? new Date(dateRaw).toISOString() : (params?.endDate || new Date().toISOString());
+        const metrics = {};
+        if (col.sessions !== -1)
+            metrics.sessions = toNum(get(col.sessions));
+        if (col.pageViews !== -1)
+            metrics.pageViews = toNum(get(col.pageViews));
+        if (col.pageViewsPerSession !== -1)
+            metrics.pageViewsPerSession = toNum(get(col.pageViewsPerSession));
+        if (col.sessionsPercent !== -1)
+            metrics.sessionsPercent = toPercent(get(col.sessionsPercent));
+        if (col.pageViewsPercent !== -1)
+            metrics.pageViewsPercent = toPercent(get(col.pageViewsPercent));
+        if (col.unitsOrdered !== -1)
+            metrics.unitsOrdered = toNum(get(col.unitsOrdered));
+        if (col.unitsOrderedB2B !== -1)
+            metrics.unitsOrderedB2B = toNum(get(col.unitsOrderedB2B));
+        if (col.orderedProductSales !== -1)
+            metrics.orderedProductSales = toCurrency(get(col.orderedProductSales));
+        if (col.orderedProductSalesB2B !== -1)
+            metrics.orderedProductSalesB2B = toCurrency(get(col.orderedProductSalesB2B));
+        if (col.unitSessionPercentage !== -1)
+            metrics.unitSessionPercentage = toPercent(get(col.unitSessionPercentage));
+        if (col.unitSessionPercentageB2B !== -1)
+            metrics.unitSessionPercentageB2B = toPercent(get(col.unitSessionPercentageB2B));
+        if (col.buyBoxPercentage !== -1)
+            metrics.buyBoxPercentage = toPercent(get(col.buyBoxPercentage));
+        out.push({
+            asin,
+            marketplaceId: Array.isArray(params?.marketplaceIds) && params.marketplaceIds.length ? params.marketplaceIds[0] : '',
+            date: dateIso,
+            metrics,
+            sku: col.sku !== -1 ? get(col.sku) : undefined,
+            parentAsin: col.parentAsin !== -1 ? get(col.parentAsin) : undefined,
+        });
+    }
+    // Collect diagnostics if enabled
+    if (params?.advancedOptions?.includeDiagnostics) {
+        const diagnostics = {
+            csvParsing: {
+                rawDataLength: csvData.length,
+                processedLines: lines.length,
+                delimiter: delimiter === '\t' ? 'TAB' : 'COMMA',
+                headerRowIndex: headerIdx,
+                rawHeaders,
+                normalizedHeaders: headers,
+                columnMapping: col,
+                totalRows: out.length,
+                skippedRows: lines.length - headerIdx - 1 - out.length,
+                sampleRows: lines.slice(headerIdx, Math.min(headerIdx + 3, lines.length))
+            }
+        };
+        return { data: out, diagnostics };
+    }
+    return out;
 }
 async function generateOutput(data, params, metadata) {
     const outputFormat = params.outputOptions.format;
