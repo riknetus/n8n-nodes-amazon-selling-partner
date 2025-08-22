@@ -190,8 +190,6 @@ async function parseAnalyticsParameters(index) {
         trafficMetrics: { metrics: ['sessions', 'pageViews'] },
         salesMetrics: { metrics: ['unitsOrdered', 'orderedProductSales'] },
         conversionMetrics: { metrics: ['unitSessionPercentage'] },
-        buyboxMetrics: { metrics: [] },
-        computedMetrics: { metrics: [] },
     });
     const selectedMetrics = extractSelectedMetrics(metricsSelection);
     // Parse other parameters

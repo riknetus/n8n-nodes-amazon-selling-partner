@@ -359,8 +359,6 @@ export const analyticsFields: INodeProperties[] = [
 			trafficMetrics: { metrics: ['sessions', 'pageViews'] },
 			salesMetrics: { metrics: ['unitsOrdered', 'orderedProductSales'] },
 			conversionMetrics: { metrics: ['unitSessionPercentage'] },
-			buyboxMetrics: { metrics: [] },
-			computedMetrics: { metrics: [] },
 		},
 		options: [
 			{
