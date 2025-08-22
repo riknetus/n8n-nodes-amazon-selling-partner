@@ -347,7 +347,7 @@ export const analyticsFields: INodeProperties[] = [
 		name: 'metricsSelection',
 		type: 'fixedCollection',
 		typeOptions: {
-			multipleValues: false,
+			multipleValues: true,
 		},
 		displayOptions: {
 			show: {
