@@ -187,9 +187,9 @@ async function parseAnalyticsParameters(index) {
     }
     // Parse metrics selection with safety fallback
     const metricsSelection = this.getNodeParameter('metricsSelection', index, {
-        trafficMetrics: { metrics: ['sessions', 'pageViews'] },
-        salesMetrics: { metrics: ['unitsOrdered', 'orderedProductSales'] },
-        conversionMetrics: { metrics: ['unitSessionPercentage'] },
+        trafficMetrics: [{ metrics: ['sessions', 'pageViews'] }],
+        salesMetrics: [{ metrics: ['unitsOrdered', 'orderedProductSales'] }],
+        conversionMetrics: [{ metrics: ['unitSessionPercentage'] }],
     });
     const selectedMetrics = extractSelectedMetrics(metricsSelection);
     // Parse other parameters
@@ -417,14 +417,21 @@ function extractSelectedMetrics(metricsSelection) {
     if (!metricsSelection || typeof metricsSelection !== 'object')
         return [];
     const metrics = [];
-    Object.values(metricsSelection).forEach((categoryMetrics) => {
-        // Handle correct fixedCollection shape: { metrics: [...] }
-        if (categoryMetrics?.metrics && Array.isArray(categoryMetrics.metrics)) {
-            metrics.push(...categoryMetrics.metrics);
+    Object.values(metricsSelection).forEach((category) => {
+        if (!category)
+            return;
+        if (Array.isArray(category)) {
+            for (const entry of category) {
+                if (entry?.metrics && Array.isArray(entry.metrics)) {
+                    metrics.push(...entry.metrics);
+                }
+                else if (typeof entry === 'string') {
+                    metrics.push(entry);
+                }
+            }
         }
-        // Handle legacy incorrect shape: direct array
-        else if (Array.isArray(categoryMetrics)) {
-            metrics.push(...categoryMetrics);
+        else if (category?.metrics && Array.isArray(category.metrics)) {
+            metrics.push(...category.metrics);
         }
     });
     return metrics;
