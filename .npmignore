@@ -1,0 +1,51 @@
+# Source files
+nodes/
+credentials/
+__tests__/
+*.test.ts
+*.test.js
+
+# Development files
+.git/
+.github/
+.vscode/
+tsconfig.json
+jest.config.js
+.eslintrc.js
+gulpfile.js
+Dockerfile*
+docker-compose*
+*.code-workspace
+
+# Documentation that's not needed in package
+plan.md
+order_details_and_items_plan.md
+CREDENTIALS_GUIDE.md
+INVOICE_REPORTS_GUIDE.md
+PRODUCTION_RATE_LIMITING_GUIDE.md
+
+# Test files
+test-*.js
+load-test-*.js
+
+# Build artifacts
+*.tsbuildinfo
+.nyc_output/
+coverage/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local 

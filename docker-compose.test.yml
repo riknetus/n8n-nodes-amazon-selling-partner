@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=test
+      - JEST_TIMEOUT=30000
+      # Sandbox credentials (set these in CI/CD or local .env)
+      - SPAPI_SANDBOX_LWA_CLIENT_ID=${SPAPI_SANDBOX_LWA_CLIENT_ID:-}
+      - SPAPI_SANDBOX_LWA_CLIENT_SECRET=${SPAPI_SANDBOX_LWA_CLIENT_SECRET:-}
+      - SPAPI_SANDBOX_LWA_REFRESH_TOKEN=${SPAPI_SANDBOX_LWA_REFRESH_TOKEN:-}
+      - SPAPI_SANDBOX_AWS_ACCESS_KEY_ID=${SPAPI_SANDBOX_AWS_ACCESS_KEY_ID:-}
+      - SPAPI_SANDBOX_AWS_SECRET_ACCESS_KEY=${SPAPI_SANDBOX_AWS_SECRET_ACCESS_KEY:-}
+      - SPAPI_SANDBOX_AWS_REGION=${SPAPI_SANDBOX_AWS_REGION:-us-east-1}
+    command: npm test
+    networks:
+      - test-network
+
+  test-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=test
+      - JEST_TIMEOUT=60000
+      # Sandbox credentials for integration tests
+      - SPAPI_SANDBOX_LWA_CLIENT_ID=${SPAPI_SANDBOX_LWA_CLIENT_ID:-}
+      - SPAPI_SANDBOX_LWA_CLIENT_SECRET=${SPAPI_SANDBOX_LWA_CLIENT_SECRET:-}
+      - SPAPI_SANDBOX_LWA_REFRESH_TOKEN=${SPAPI_SANDBOX_LWA_REFRESH_TOKEN:-}
+      - SPAPI_SANDBOX_AWS_ACCESS_KEY_ID=${SPAPI_SANDBOX_AWS_ACCESS_KEY_ID:-}
+      - SPAPI_SANDBOX_AWS_SECRET_ACCESS_KEY=${SPAPI_SANDBOX_AWS_SECRET_ACCESS_KEY:-}
+      - SPAPI_SANDBOX_AWS_REGION=${SPAPI_SANDBOX_AWS_REGION:-us-east-1}
+    command: npm run test:integration
+    networks:
+      - test-network
+    depends_on:
+      - test-runner
+
+  test-coverage:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./coverage:/app/coverage
+    environment:
+      - NODE_ENV=test
+      - JEST_TIMEOUT=30000
+    command: npm run test:coverage
+    networks:
+      - test-network
+
+  test-e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=test
+      - JEST_TIMEOUT=60000
+    command: npm run test:e2e
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  node_modules:
+  coverage: 
