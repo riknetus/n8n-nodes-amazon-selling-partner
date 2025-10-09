@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-amazon-selling-partner",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Custom n8n node for the Amazon Selling Partner API",
   "main": "index.js",
   "scripts": {
@@ -29,14 +29,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/n8n-io/n8n-nodes-amazon-selling-partner.git"
+    "url": "git+https://github.com/Aarathron/n8n-nodes-amazon-selling-partner.git"
   },
   "author": "n8n",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/n8n-io/n8n-nodes-amazon-selling-partner/issues"
+    "url": "https://github.com/Aarathron/n8n-nodes-amazon-selling-partner/issues"
   },
-  "homepage": "https://github.com/n8n-io/n8n-nodes-amazon-selling-partner#readme",
+  "homepage": "https://github.com/Aarathron/n8n-nodes-amazon-selling-partner#readme",
   "dependencies": {
     "@types/csv-parse": "^1.1.12",
     "aws4": "^1.12.0",
