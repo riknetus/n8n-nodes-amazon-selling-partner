@@ -215,9 +215,26 @@ async function createReportAndPoll(
 
 function parseReport(buffer: Buffer) {
 	try {
-		return parseCsv(buffer.toString('utf8'), {
+		const content = buffer.toString('utf8');
+		
+		// Auto-detect delimiter by checking the first line
+		// Amazon SP-API reports are typically tab-separated
+		const firstLineEnd = content.indexOf('\n');
+		const firstLine = firstLineEnd > 0 ? content.substring(0, firstLineEnd) : content;
+		
+		// Count tabs and commas in the header to determine delimiter
+		const tabCount = (firstLine.match(/\t/g) || []).length;
+		const commaCount = (firstLine.match(/,/g) || []).length;
+		
+		// Determine delimiter: use whichever appears more frequently
+		// Default to tab if counts are equal (Amazon SP-API typically uses tabs)
+		const delimiter = tabCount >= commaCount ? '\t' : ',';
+		
+		return parseCsv(content, {
 			columns: true,
 			skip_empty_lines: true,
+			delimiter: delimiter,
+			relax_column_count: true, // Allow inconsistent column counts
 		});
 	} catch (error) {
 		throw new Error(`Failed to parse report: ${error instanceof Error ? error.message : 'Unknown error'}`);
