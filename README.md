@@ -12,6 +12,7 @@ A production-grade n8n custom node for Amazon Selling Partner API with comprehen
 - **Shipments Management**: Track and manage shipment operations and details
 - **Product Listings**: Manage product catalog and inventory operations
 - **Invoices & Reports**: Generate and retrieve invoices and financial reports
+- **Reports (Sales & Returns)**: Pull Sales & Traffic business reports, FBA/MFN returns, refunds, and a consolidated sales vs returns view by ASIN/SKU
 - **Simplified Authentication**: LWA (Login with Amazon) credentials only - AWS credentials optional
 - **Multi-Marketplace Support**: Support for all Amazon marketplaces globally
 - **Automatic Pagination**: Handle large result sets seamlessly
@@ -198,6 +199,57 @@ If your application requires AWS SigV4 signing:
     "maxResultsPerPage": 100,
     "returnAll": true
   }
+}
+```
+
+### Reports: Sales & Traffic by ASIN
+```json
+{
+  "resource": "reports",
+  "operation": "salesTrafficByAsin",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z",
+  "granularity": "DAILY",
+  "aggregationLevel": "CHILD",
+  "includeSessions": true
+}
+```
+
+### Reports: Returns (FBA/MFN) by ASIN
+```json
+{
+  "resource": "reports",
+  "operation": "returnsByAsinFba",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z",
+  "granularity": "DAILY"
+}
+```
+
+### Reports: Consolidated Sales & Returns
+```json
+{
+  "resource": "reports",
+  "operation": "consolidatedSalesAndReturnsByAsin",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z",
+  "granularity": "DAILY",
+  "includeRefunds": false,
+  "emitRawSubdatasets": false
+}
+```
+
+### Reports: Refund Totals by Marketplace
+```json
+{
+  "resource": "reports",
+  "operation": "refundsByAsin",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z"
 }
 ```
 
