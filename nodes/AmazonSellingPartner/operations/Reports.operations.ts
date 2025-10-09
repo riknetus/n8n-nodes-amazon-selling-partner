@@ -482,6 +482,18 @@ async function handleConsolidated(this: IExecuteFunctions, itemIndex: number) {
 	[fbaReturns, mfnReturns].forEach((dataset, index) => {
 		dataset.forEach(item => {
 			const returnsRow = item.json as IDataObject;
+			
+			// Skip entries with empty/missing critical fields
+			if (!returnsRow.date || (!returnsRow.asin && !returnsRow.sku)) {
+				return;
+			}
+			
+			// Skip entries with zero returned units
+			const returnedUnits = Number(returnsRow.returnedUnits || 0);
+			if (returnedUnits === 0) {
+				return;
+			}
+			
 			const key = keyFn(returnsRow);
 			const existing = consolidatedMap.get(key) || {
 				date: returnsRow.date as string,
@@ -496,7 +508,7 @@ async function handleConsolidated(this: IExecuteFunctions, itemIndex: number) {
 				currencyCode: 'USD',
 			};
 			const field = index === 0 ? 'fbaReturnedUnits' : 'mfnReturnedUnits';
-			existing[field] += Number(returnsRow.returnedUnits || 0);
+			existing[field] += returnedUnits;
 			consolidatedMap.set(key, existing);
 		});
 	});
@@ -532,12 +544,25 @@ async function handleConsolidated(this: IExecuteFunctions, itemIndex: number) {
 	}));
 
 	if (emitRawSubdatasets) {
+		// Filter out empty/meaningless entries from raw subdatasets
+		const filterValidEntries = (items: INodeExecutionData[]) => {
+			return items.filter(item => {
+				const row = item.json as IDataObject;
+				// Keep entries that have a date AND (asin OR sku)
+				// OR have non-zero units/amounts
+				return (row.date && (row.asin || row.sku)) || 
+				       Number(row.orderedUnits || 0) > 0 || 
+				       Number(row.returnedUnits || 0) > 0 ||
+				       Number(row.refundsAmount || 0) > 0;
+			});
+		};
+
 		return [
 			...consolidatedItems,
-			...sales,
-			...fbaReturns,
-			...mfnReturns,
-			...(refunds || []),
+			...filterValidEntries(sales),
+			...filterValidEntries(fbaReturns),
+			...filterValidEntries(mfnReturns),
+			...(refunds ? filterValidEntries(refunds) : []),
 		] as INodeExecutionData[];
 	}
 
