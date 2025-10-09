@@ -233,8 +233,8 @@ function buildSalesTrafficOptions(itemIndex, granularity) {
     const aggregationLevel = this.getNodeParameter('aggregationLevel', itemIndex, 'CHILD');
     const includeSessions = this.getNodeParameter('includeSessions', itemIndex, true);
     return {
-        'aggregationLevel': aggregationLevel,
-        'reportingPeriod': granularity,
+        'asinGranularity': aggregationLevel,
+        'dateGranularity': granularity,
         'includeASIN': 'true',
         'includeChildASIN': aggregationLevel === 'PARENT' ? 'false' : 'true',
         'includeSessions': includeSessions ? 'true' : 'false',

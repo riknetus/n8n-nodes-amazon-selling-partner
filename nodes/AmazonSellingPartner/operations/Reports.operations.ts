@@ -319,8 +319,8 @@ function buildSalesTrafficOptions(this: IExecuteFunctions, itemIndex: number, gr
 	const aggregationLevel = this.getNodeParameter('aggregationLevel', itemIndex, 'CHILD') as string;
 	const includeSessions = this.getNodeParameter('includeSessions', itemIndex, true) as boolean;
 	return {
-		'aggregationLevel': aggregationLevel,
-		'reportingPeriod': granularity,
+		'asinGranularity': aggregationLevel,
+		'dateGranularity': granularity,
 		'includeASIN': 'true',
 		'includeChildASIN': aggregationLevel === 'PARENT' ? 'false' : 'true',
 		'includeSessions': includeSessions ? 'true' : 'false',

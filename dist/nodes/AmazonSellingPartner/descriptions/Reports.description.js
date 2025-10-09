@@ -107,11 +107,11 @@ exports.reportsFields = [
             },
         },
         options: [
-            { name: 'Daily', value: 'DAILY' },
-            { name: 'Weekly', value: 'WEEKLY' },
-            { name: 'Monthly', value: 'MONTHLY' },
+            { name: 'Daily', value: 'DAY' },
+            { name: 'Weekly', value: 'WEEK' },
+            { name: 'Monthly', value: 'MONTH' },
         ],
-        default: 'DAILY',
+        default: 'DAY',
         description: 'Aggregation level for returned metrics. Must align with Amazon report configuration.',
     },
     {
