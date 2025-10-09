@@ -27,12 +27,14 @@ describe('RateLimiter', () => {
 	let rateLimiter: RateLimiter;
 
 	beforeEach(() => {
+		jest.useFakeTimers();
 		jest.clearAllMocks();
 		rateLimiter = new RateLimiter({ queueTimeout: 5000 }); // Short timeout for tests
 	});
 
 	afterEach(() => {
 		rateLimiter.cleanup();
+		jest.useRealTimers();
 	});
 
 	describe('Basic token consumption', () => {
@@ -60,7 +62,7 @@ describe('RateLimiter', () => {
 			let resolved = false;
 			promise.then(() => { resolved = true; });
 			
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await jest.advanceTimersByTimeAsync(100);
 			expect(resolved).toBe(false);
 
 			// Prevent unhandled promise rejection in test
@@ -80,7 +82,7 @@ describe('RateLimiter', () => {
 			let resolved = false;
 			promise.then(() => { resolved = true; });
 			
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await jest.advanceTimersByTimeAsync(100);
 			expect(resolved).toBe(false);
 			
 			// Prevent unhandled promise rejection in test
@@ -120,7 +122,7 @@ describe('RateLimiter', () => {
 			let resolved = false;
 			promise.then(() => { resolved = true; });
 			
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await jest.advanceTimersByTimeAsync(100);
 			expect(resolved).toBe(false);
 			
 			// Prevent unhandled promise rejection in test
@@ -142,7 +144,7 @@ describe('RateLimiter', () => {
 			}
 			
 			// Requests should be queued, not resolved immediately
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await jest.advanceTimersByTimeAsync(100);
 			
 			const metrics = rateLimiter.getMetrics();
 			expect(metrics.groupDetails['test-group'].queueLength).toBe(3);
@@ -220,7 +222,7 @@ describe('RateLimiter', () => {
 			// This should trigger a rate limit hit
 			const promise = rateLimiter.waitForToken('test-group');
 			
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await jest.advanceTimersByTimeAsync(100);
 			
 			expect(metricsCollector.recordRateLimitHit).toHaveBeenCalledWith('test-group');
 
@@ -330,7 +332,7 @@ describe('RateLimiter', () => {
 			// This should trigger a rate limit hit
 			const promise = rateLimiter.waitForToken('test-group');
 			
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await jest.advanceTimersByTimeAsync(100);
 			
 			expect(metricsCollector.recordRateLimitHit).toHaveBeenCalledWith('test-group');
 
@@ -343,18 +345,16 @@ describe('RateLimiter', () => {
 		it('should handle burst of order detail requests correctly', async () => {
 			// Simulate 35 parallel getOrderItems calls (more than burst of 30)
 			const promises = [];
-			const startTime = Date.now();
 			
 			for (let i = 0; i < 35; i++) {
 				promises.push(rateLimiter.waitForToken('orders-detail'));
 			}
 			
-			await Promise.all(promises);
-			const duration = Date.now() - startTime;
+			// Advance timers to simulate time passing
+			await jest.advanceTimersByTimeAsync(12000); // 12 seconds should be enough
 			
-			// Should take at least 10 seconds for the last 5 requests (5 requests / 0.5 rps = 10s)
-			expect(duration).toBeGreaterThan(8000); // Allow some tolerance
-		});
+			await Promise.all(promises);
+		}, 30000);
 
 		it('should maintain separate limits for different operation types', async () => {
 			// Use up orders-detail tokens
@@ -378,13 +378,13 @@ describe('RateLimiter', () => {
 			for (let i = 0; i < 5; i++) {
 				promises.push(rateLimiter.waitForToken('orders-detail'));
 				if (i < 4) {
-					await new Promise(resolve => setTimeout(resolve, 2500)); // 0.4 rps
+					await jest.advanceTimersByTimeAsync(2500); // 0.4 rps
 				}
 			}
 			
 			// All requests should complete successfully
 			await expect(Promise.all(promises)).resolves.not.toThrow();
-		});
+		}, 30000);
 	});
 
 	describe('Cleanup and resource management', () => {

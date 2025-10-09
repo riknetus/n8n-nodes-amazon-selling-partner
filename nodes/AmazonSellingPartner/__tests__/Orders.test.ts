@@ -106,7 +106,8 @@ describe('Orders Operations', () => {
 			mockExecuteFunctions.getNodeParameter
 				.mockReturnValueOnce(['ATVPDKIKX0DER']) // marketplaceIds
 				.mockReturnValueOnce('2024-01-01T00:00:00Z') // createdAfter
-				.mockReturnValueOnce('2024-03-01T00:00:00Z'); // createdBefore
+				.mockReturnValueOnce('2024-03-01T00:00:00Z') // createdBefore
+				.mockReturnValueOnce({}); // additionalOptions
 
 			mockExecuteFunctions.getNode.mockReturnValue({
 				id: 'test-node',
@@ -331,6 +332,18 @@ describe('Orders Operations', () => {
 				typeVersion: 1,
 				position: [0, 0],
 				parameters: {},
+			});
+
+			// Mock SpApiRequest to avoid actual API call
+			const SpApiRequest = require('../helpers/SpApiRequest').SpApiRequest;
+			SpApiRequest.makeRequest = jest.fn().mockResolvedValue({
+				data: {
+					payload: {
+						Orders: [],
+					},
+				},
+				headers: {},
+				status: 200,
 			});
 
 			await expect(

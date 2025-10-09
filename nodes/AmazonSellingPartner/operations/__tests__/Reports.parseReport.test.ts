@@ -3,7 +3,23 @@ import { parse as parseCsv } from 'csv-parse/sync';
 // This is a copy of the parseReport function for testing
 function parseReport(buffer: Buffer) {
 	try {
-		const content = buffer.toString('utf8');
+		const content = buffer.toString('utf8').trim();
+		
+		// First, try to detect if this is JSON content
+		if (content.startsWith('{') || content.startsWith('[')) {
+			try {
+				const jsonData = JSON.parse(content);
+				// If it's an array, return it directly
+				if (Array.isArray(jsonData)) {
+					return jsonData;
+				}
+				// If it's an object, wrap it in an array
+				return [jsonData];
+			} catch (jsonError) {
+				// If JSON parsing fails, fall through to CSV/TSV parsing
+				// This handles cases where content starts with { but isn't valid JSON
+			}
+		}
 		
 		// Auto-detect delimiter by checking the first line
 		// Amazon SP-API reports are typically tab-separated
@@ -112,6 +128,53 @@ describe('parseReport', () => {
 		expect(result[0]).toHaveProperty('asin');
 		expect(result[0]).toHaveProperty('sku');
 		expect(result[0]).toHaveProperty('units');
+	});
+
+	it('should parse JSON array content', () => {
+		const jsonContent = '[{"asin":"B001","sku":"SKU001","units":"10"},{"asin":"B002","sku":"SKU002","units":"20"}]';
+		const buffer = Buffer.from(jsonContent);
+		
+		const result = parseReport(buffer);
+		
+		expect(result).toEqual([
+			{ asin: 'B001', sku: 'SKU001', units: '10' },
+			{ asin: 'B002', sku: 'SKU002', units: '20' },
+		]);
+	});
+
+	it('should parse JSON object content', () => {
+		const jsonContent = '{"asin":"B001","sku":"SKU001","units":"10"}';
+		const buffer = Buffer.from(jsonContent);
+		
+		const result = parseReport(buffer);
+		
+		expect(result).toEqual([
+			{ asin: 'B001', sku: 'SKU001', units: '10' },
+		]);
+	});
+
+	it('should handle malformed JSON gracefully', () => {
+		// Content that starts with { but isn't valid JSON should fall back to CSV parsing
+		// But if it's not valid CSV either, it should throw an error
+		const malformedJson = '{"invalid": json, missing quotes}';
+		const buffer = Buffer.from(malformedJson);
+		
+		// This should throw an error because it's neither valid JSON nor valid CSV
+		expect(() => parseReport(buffer)).toThrow();
+	});
+
+	it('should handle the specific error case: JSON content being parsed as CSV', () => {
+		// This simulates the exact error from the user: content starting with "{" being parsed as CSV
+		const jsonContent = '{"reportType":"sales","data":[{"asin":"B001","units":10}]}';
+		const buffer = Buffer.from(jsonContent);
+		
+		const result = parseReport(buffer);
+		
+		// Should successfully parse as JSON
+		expect(result).toHaveLength(1);
+		expect(result[0]).toHaveProperty('reportType');
+		expect(result[0]).toHaveProperty('data');
+		expect(Array.isArray((result[0] as any).data)).toBe(true);
 	});
 });
 

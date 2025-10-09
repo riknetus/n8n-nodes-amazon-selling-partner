@@ -141,7 +141,23 @@ async function createReportAndPoll(executeFunctions, reportType, dataStartTime, 
 }
 function parseReport(buffer) {
     try {
-        const content = buffer.toString('utf8');
+        const content = buffer.toString('utf8').trim();
+        // First, try to detect if this is JSON content
+        if (content.startsWith('{') || content.startsWith('[')) {
+            try {
+                const jsonData = JSON.parse(content);
+                // If it's an array, return it directly
+                if (Array.isArray(jsonData)) {
+                    return jsonData;
+                }
+                // If it's an object, wrap it in an array
+                return [jsonData];
+            }
+            catch (jsonError) {
+                // If JSON parsing fails, fall through to CSV/TSV parsing
+                // This handles cases where content starts with { but isn't valid JSON
+            }
+        }
         // Auto-detect delimiter by checking the first line
         // Amazon SP-API reports are typically tab-separated
         const firstLineEnd = content.indexOf('\n');
