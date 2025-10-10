@@ -140,6 +140,15 @@ class SpApiRequest {
             this.rateLimiter.updateFromHeaders(rateLimitGroup, response.headers);
             // Handle non-success responses
             if (response.status >= 400) {
+                // Log detailed error response for debugging
+                console.error('SP-API Request Failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    endpoint: options.endpoint,
+                    method: options.method,
+                    responseData: response.data,
+                    headers: response.headers,
+                });
                 // Log failed API access
                 AuditLogger_1.auditLogger.logApiAccess(nodeId, options.endpoint, false, {
                     status: response.status,

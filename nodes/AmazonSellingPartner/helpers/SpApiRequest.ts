@@ -189,19 +189,29 @@ export class SpApiRequest {
 			// Update rate limiter with response headers
 			this.rateLimiter.updateFromHeaders(rateLimitGroup, response.headers as Record<string, string>);
 
-			// Handle non-success responses
-			if (response.status >= 400) {
-				// Log failed API access
-				auditLogger.logApiAccess(nodeId, options.endpoint, false, {
-					status: response.status,
-					duration,
-					method: options.method,
-					useAwsSigning,
-				});
-				metricsCollector.recordApiRequest(options.endpoint, duration, false, `HTTP_${response.status}`);
-				
-				throw await ErrorHandler.handleApiError(response);
-			}
+		// Handle non-success responses
+		if (response.status >= 400) {
+			// Log detailed error response for debugging
+			console.error('SP-API Request Failed:', {
+				status: response.status,
+				statusText: response.statusText,
+				endpoint: options.endpoint,
+				method: options.method,
+				responseData: response.data,
+				headers: response.headers,
+			});
+			
+			// Log failed API access
+			auditLogger.logApiAccess(nodeId, options.endpoint, false, {
+				status: response.status,
+				duration,
+				method: options.method,
+				useAwsSigning,
+			});
+			metricsCollector.recordApiRequest(options.endpoint, duration, false, `HTTP_${response.status}`);
+			
+			throw await ErrorHandler.handleApiError(response);
+		}
 
 			// Log successful API access
 			auditLogger.logApiAccess(nodeId, options.endpoint, true, {
