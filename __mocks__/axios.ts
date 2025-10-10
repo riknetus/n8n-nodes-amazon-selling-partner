@@ -26,3 +26,4 @@ const axiosMock: any = {
 };
 
 export default axiosMock;
+

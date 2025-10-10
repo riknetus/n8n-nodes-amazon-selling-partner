@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import { LwaClient } from './LwaClient';
 import { SigV4Signer } from './SigV4Signer';
+import { RdtClient, RestrictedResource } from './RdtClient';
 import { RateLimiter } from '../core/RateLimiter';
 import { ErrorHandler } from '../core/ErrorHandler';
 import { metricsCollector } from '../core/MetricsCollector';
@@ -21,6 +22,7 @@ interface SpApiRequestOptions {
 	body?: any;
 	headers?: Record<string, string>;
 	responseType?: 'json' | 'stream' | 'text';
+	restrictedResources?: RestrictedResource[];
 }
 
 interface SpApiResponse<T = any> {
@@ -108,9 +110,19 @@ export class SpApiRequest {
 			const rateLimitGroup = getEndpointGroup(options.endpoint);
 			await this.rateLimiter.waitForToken(rateLimitGroup);
 
-			// Get LWA access token
-			const accessToken = await LwaClient.getAccessToken(credentials);
-			auditLogger.logAuthentication(nodeId, 'LWA', true, { endpoint: options.endpoint });
+			// Get access token (LWA or RDT based on restricted resources)
+			let accessToken: string;
+			let authType: string;
+			
+			if (options.restrictedResources && options.restrictedResources.length > 0) {
+				accessToken = await RdtClient.getRestrictedAccessToken(credentials, options.restrictedResources);
+				authType = 'RDT';
+			} else {
+				accessToken = await LwaClient.getAccessToken(credentials);
+				authType = 'LWA';
+			}
+			
+			auditLogger.logAuthentication(nodeId, authType, true, { endpoint: options.endpoint });
 
 			// Prepare headers
 			const headers = {
@@ -232,25 +244,9 @@ export class SpApiRequest {
 	}
 
 	private static shouldUseAwsSigning(credentials: ICredentialDataDecryptedObject): boolean {
-		// Check if user explicitly enabled AWS signing
+		// Only enable AWS signing if explicitly requested
 		const advancedOptions = credentials.advancedOptions as any;
-		if (advancedOptions?.useAwsSigning) {
-			return true;
-		}
-
-		// Check if AWS credentials are provided (backwards compatibility)
-		const hasAwsCredentials = credentials.awsAccessKeyId && credentials.awsSecretAccessKey;
-		if (hasAwsCredentials) {
-			return true;
-		}
-
-		// Check if AWS credentials are in advanced options
-		const hasAdvancedAwsCredentials = advancedOptions?.awsAccessKeyId && advancedOptions?.awsSecretAccessKey;
-		if (hasAdvancedAwsCredentials) {
-			return true;
-		}
-
-		return false;
+		return Boolean(advancedOptions?.useAwsSigning);
 	}
 
 	private static validateCredentials(

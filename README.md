@@ -68,19 +68,45 @@ For most use cases, you only need LWA credentials:
    - **LWA Client Secret**: From your SP-API application  
    - **LWA Refresh Token**: Generated during authorization
 
-#### Advanced Setup (Optional AWS Signing)
-If your application requires AWS SigV4 signing:
+#### Advanced Setup (AWS SigV4 – required for live SP-API)
+Amazon expects *every* call to be authenticated with an LWA access token **and** signed with AWS Signature Version 4. Skip the AWS keys and Amazon responds with `401/403 Authentication failed`.
 
-1. Create AWS IAM user with SP-API permissions
-2. In the credential configuration, expand **Advanced Options**
-3. Add your AWS credentials:
-   - **AWS Access Key ID**: From your IAM user
-   - **AWS Secret Access Key**: From your IAM user
-   - **Use AWS SigV4 Signing**: Enable this option
-   - **AWS Role ARN**: (Optional) For enhanced security
-   - **SP-API Endpoint Override**: (Optional) Custom endpoint
+Follow these steps (full walkthrough in `CREDENTIALS_GUIDE.md`):
 
-> **Note**: Most SP-API operations work with LWA-only authentication. AWS credentials are only needed for specific advanced operations or if your application configuration requires it.
+1. Create an IAM user in the AWS account that owns your SP-API application (`IAM → Users → Create user`).
+2. Attach a policy that allows `execute-api:Invoke` on the SP-API execute-api ARNs (see the minimal/region-scoped JSON in the guide).
+3. Generate Access Key ID and Secret Access Key (`IAM → Users → <user> → Security credentials → Create access key`, choose *Application running outside AWS*).
+4. In n8n credentials, expand **Advanced Options** and paste the keys.
+5. Enable **Use AWS SigV4 Signing**. Optional: fill **AWS Role ARN** if you require assume-role; the node can sign directly with the user keys.
+
+Keep the keys secure and rotate them regularly. If you add a new SP-API role later, re-authorize the seller to issue a fresh refresh token.
+
+### 3. Grant Required SP-API Roles
+
+- **Reports API** – needed for the Sales & Traffic report fallback (`GET_SALES_AND_TRAFFIC_REPORT`).
+- **Selling Partner Insights / Data Kiosk** – needed for the Data Kiosk analytics endpoints.
+
+Ensure these roles are assigned to your app in Developer Central *and* authorized by the seller account. After adding roles, restart the authorization flow to obtain a refresh token that carries the new scopes.
+
+### 4. Smoke test before complex operations
+
+Create a workflow with the Amazon Selling Partner node:
+
+1. Resource `sellers`, operation `getMarketplaceParticipations`.
+2. Execute the node.
+   - **200 OK** → credentials and signing are correct.
+   - **401 Unauthorized** → AWS signing disabled/incorrect keys.
+   - **403 Forbidden** → seller hasn’t authorized the required role or the app lacks it.
+
+### 5. Running Analytics
+
+- Set `Analytics → Advanced Options → analyticsMode = auto`. The node tries Data Kiosk first and falls back to Reports if necessary.
+- If you know you lack Data Kiosk role, set `analyticsMode = reports` to skip the 403.
+- Provide `marketplaceIds`, date range, and ASIN/SKU filters that match the target mode.
+
+### 6. Refreshing LWA credentials
+
+Still getting LWA errors after signing? Rotate the LWA client secret, re-authorize the seller, and paste the new refresh token into n8n.
 
 ## Usage
 

@@ -56,7 +56,7 @@ export class AmazonSpApi implements ICredentialType {
 			displayOptions: {
 				show: {},
 			},
-			description: 'For basic operations, you only need LWA credentials below. AWS credentials are optional and only required for advanced operations or if your SP-API application specifically requires AWS SigV4 signing.',
+			description: 'LWA-only authentication is the default and recommended approach. AWS credentials are optional and only needed if you explicitly enable AWS SigV4 signing in Advanced Options.',
 		},
 		{
 			displayName: 'LWA Client ID',
@@ -100,7 +100,7 @@ export class AmazonSpApi implements ICredentialType {
 					name: 'awsAccessKeyId',
 					type: 'string',
 					default: '',
-					description: 'AWS Access Key ID for your IAM user with SP-API permissions (optional for most operations)',
+					description: 'AWS Access Key ID for your IAM user with SP-API permissions (only required if AWS SigV4 signing is explicitly enabled)',
 				},
 				{
 					displayName: 'AWS Secret Access Key',
@@ -110,7 +110,7 @@ export class AmazonSpApi implements ICredentialType {
 						password: true,
 					},
 					default: '',
-					description: 'AWS Secret Access Key for your IAM user (optional for most operations)',
+					description: 'AWS Secret Access Key for your IAM user (only required if AWS SigV4 signing is explicitly enabled)',
 				},
 				{
 					displayName: 'AWS Role ARN',
@@ -131,7 +131,7 @@ export class AmazonSpApi implements ICredentialType {
 					name: 'useAwsSigning',
 					type: 'boolean',
 					default: false,
-					description: 'Enable AWS SigV4 request signing (requires AWS credentials above)',
+					description: 'Enable AWS SigV4 request signing (requires AWS credentials above). Most operations work with LWA-only authentication.',
 				},
 			],
 		},

@@ -62,6 +62,86 @@ This guide explains the simplified credential structure for the Amazon Selling P
 4. In n8n credentials, expand "Advanced Options"
 5. Add AWS credentials and enable "Use AWS SigV4 Signing"
 
+### Creating AWS Credentials (Step-by-Step)
+
+**Note**: AWS credentials are only required if you explicitly enable AWS SigV4 signing in Advanced Options. Most SP-API operations work with LWA-only authentication.
+
+If you need AWS SigV4 signing, follow these steps to create the AWS keys:
+
+1. **Pick the AWS account** that owns your SP-API application (Seller Central access is not required for the IAM user).
+2. **Create an IAM user**
+   - Console path: `IAM → Users → Create user`
+   - User name: e.g. `spapi-n8n`
+   - Permissions: choose **Attach policies directly**, click **Create policy**, switch to the **JSON** tab, and paste one of the policies shown below. Save the policy, then select it for the user.
+3. **Generate access keys**
+   - After the user is created, open it (`IAM → Users → spapi-n8n → Security credentials`).
+   - Click **Create access key** → choose *Application running outside AWS* → acknowledge, then download the `.csv` or copy the values. You only see the secret key once.
+4. **Harden if needed**
+   - Restrict the policy to only the SP-API regions you call (NA `us-east-1`, EU `eu-west-1`, FE `us-west-2`).
+   - Rotate keys periodically and monitor with CloudTrail.
+   - Optional: create an IAM role with the same policy and allow the user `sts:AssumeRole`. The n8n node already signs requests directly with the user keys, so using the role is optional.
+5. **Paste the keys into n8n**
+   - Open your **Amazon Selling Partner API** credential.
+   - Expand **Advanced Options**, add the Access Key ID and Secret Access Key, and enable **Use AWS SigV4 Signing**.
+   - Save the credential.
+
+#### IAM policies
+
+Minimal broad policy (allows invocation everywhere—tighten later):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeSpApi",
+      "Effect": "Allow",
+      "Action": "execute-api:Invoke",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+Region-scoped variant (restrict to SP-API regions you use):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeSpApiRegions",
+      "Effect": "Allow",
+      "Action": "execute-api:Invoke",
+      "Resource": [
+        "arn:aws:execute-api:us-east-1:*:*/*/*/*",
+        "arn:aws:execute-api:eu-west-1:*:*/*/*/*",
+        "arn:aws:execute-api:us-west-2:*:*/*/*/*"
+      ]
+    }
+  ]
+}
+```
+
+#### Optional AWS CLI workflow (PowerShell)
+
+```powershell
+# Create user
+aws iam create-user --user-name spapi-n8n
+
+# Create policy from local file policy.json (use one of the JSON snippets above)
+aws iam create-policy --policy-name SPAPIInvoke --policy-document file://policy.json
+
+# Attach policy to the user
+$ACCOUNT_ID=(aws sts get-caller-identity --query Account --output text)
+aws iam attach-user-policy --user-name spapi-n8n --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/SPAPIInvoke
+
+# Create access key (store the secret securely)
+aws iam create-access-key --user-name spapi-n8n
+```
+
+Use the Access Key ID and Secret Access Key from the console download or the CLI output when you update the n8n credential.
+
 ## Migration from Previous Version
 
 If you're upgrading from a previous version where AWS credentials were required:
@@ -132,8 +212,46 @@ Use the sandbox environment first:
 }
 ```
 
+## Restricted Data Tokens (RDT) for PII Endpoints
+
+For endpoints that return personally identifiable information (PII), you need to use Restricted Data Tokens instead of regular LWA tokens. This includes:
+
+- Buyer information in orders
+- Customer addresses
+- Payment information
+- Other sensitive data
+
+### Using RDT in Your Workflows
+
+When calling PII endpoints, specify the restricted resources in your request:
+
+```typescript
+// Example: Get order with buyer information
+const response = await SpApiRequest.makeRequest(this, {
+  method: 'GET',
+  endpoint: '/orders/v0/orders/123-4567890-1234567',
+  restrictedResources: [
+    {
+      method: 'GET',
+      path: '/orders/v0/orders/123-4567890-1234567',
+      dataElements: ['buyerInfo']
+    }
+  ]
+});
+```
+
+### RDT Resource Configuration
+
+Each restricted resource specifies:
+- `method`: HTTP method (GET, POST, PUT, DELETE, PATCH)
+- `path`: The API endpoint path
+- `dataElements`: Optional array of specific data elements to restrict
+
+The node automatically handles RDT token generation and uses it as the `x-amz-access-token` header for these requests.
+
 ## Supported Operations
 
 - All Orders operations, including **getOrders**, **getOrder** (order details), and **getOrderItems** (order line items), work with LWA-only authentication. No additional scopes or AWS credentials are required for these endpoints.
+- PII endpoints require Restricted Data Tokens as shown above.
 
 This simplified approach makes the Amazon SP-API node much easier to set up and use while maintaining full compatibility with existing implementations. 
