@@ -68,16 +68,16 @@ describe('RdtClient', () => {
 		it('should handle RDT API error response', async () => {
 			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
 
-			mockedAxios.post.mockRejectedValueOnce({
-				isAxiosError: true,
-				response: {
-					status: 400,
-					data: {
-						error: 'InvalidRequest',
-						error_description: 'Invalid restricted resources',
-					},
-				},
-			});
+    mockedAxios.post.mockRejectedValueOnce(Object.assign(new Error('Request failed'), {
+        isAxiosError: true,
+        response: {
+            status: 400,
+            data: {
+                error: 'InvalidRequest',
+                error_description: 'Invalid restricted resources',
+            },
+        },
+    }));
 
 			await expect(
 				RdtClient.getRestrictedAccessToken(mockCredentials, mockRestrictedResources)

@@ -1,4 +1,5 @@
 import { IExecuteFunctions } from 'n8n-workflow';
+import { RestrictedResource } from './RdtClient';
 interface SpApiRequestOptions {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     endpoint: string;
@@ -6,6 +7,7 @@ interface SpApiRequestOptions {
     body?: any;
     headers?: Record<string, string>;
     responseType?: 'json' | 'stream' | 'text';
+    restrictedResources?: RestrictedResource[];
 }
 interface SpApiResponse<T = any> {
     data: T;

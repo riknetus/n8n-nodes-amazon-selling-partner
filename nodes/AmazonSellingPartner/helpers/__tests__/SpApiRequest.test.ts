@@ -8,10 +8,10 @@ import { ICredentialDataDecryptedObject, IExecuteFunctions } from 'n8n-workflow'
 jest.mock('axios');
 jest.mock('../LwaClient');
 jest.mock('../RdtClient');
-jest.mock('../core/RateLimiter');
-jest.mock('../core/AuditLogger');
-jest.mock('../core/MetricsCollector');
-jest.mock('../core/SecurityValidator');
+jest.mock('../../core/RateLimiter');
+jest.mock('../../core/AuditLogger');
+jest.mock('../../core/MetricsCollector');
+jest.mock('../../core/SecurityValidator');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedLwaClient = LwaClient as jest.Mocked<typeof LwaClient>;
@@ -33,11 +33,17 @@ describe('SpApiRequest', () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockedAxios.mockResolvedValue({
-			data: { test: 'response' },
-			headers: {},
-			status: 200,
-		} as any);
+    // Ensure both callable axios() and axios.request() return a successful response
+    (mockedAxios as any).mockResolvedValue({
+      data: { test: 'response' },
+      headers: {},
+      status: 200,
+    } as any);
+    (mockedAxios.request as jest.Mock).mockResolvedValue({
+    data: { test: 'response' },
+    headers: {},
+    status: 200,
+  } as any);
 	});
 
 	describe('Token Selection', () => {

@@ -9,6 +9,7 @@ const url_1 = require("url");
 const n8n_workflow_1 = require("n8n-workflow");
 const LwaClient_1 = require("./LwaClient");
 const SigV4Signer_1 = require("./SigV4Signer");
+const RdtClient_1 = require("./RdtClient");
 const RateLimiter_1 = require("../core/RateLimiter");
 const ErrorHandler_1 = require("../core/ErrorHandler");
 const MetricsCollector_1 = require("../core/MetricsCollector");
@@ -75,12 +76,24 @@ class SpApiRequest {
             // Apply rate limiting using group-based rate limits
             const rateLimitGroup = (0, rateLimitConfig_1.getEndpointGroup)(options.endpoint);
             await this.rateLimiter.waitForToken(rateLimitGroup);
-            // Get LWA access token
-            const accessToken = await LwaClient_1.LwaClient.getAccessToken(credentials);
-            AuditLogger_1.auditLogger.logAuthentication(nodeId, 'LWA', true, { endpoint: options.endpoint });
+            // Get access token (LWA or RDT based on restricted resources)
+            let accessToken;
+            let authType;
+            if (options.restrictedResources && options.restrictedResources.length > 0) {
+                accessToken = await RdtClient_1.RdtClient.getRestrictedAccessToken(credentials, options.restrictedResources);
+                authType = 'RDT';
+            }
+            else {
+                accessToken = await LwaClient_1.LwaClient.getAccessToken(credentials);
+                authType = 'LWA';
+            }
+            AuditLogger_1.auditLogger.logAuthentication(nodeId, authType, true, { endpoint: options.endpoint });
             // Prepare headers
+            const acceptHeader = (options.responseType === 'stream' || options.responseType === 'text')
+                ? '*/*'
+                : 'application/json';
             const headers = {
-                'Accept': options.responseType === 'json' ? 'application/json' : '*/*',
+                'Accept': acceptHeader,
                 'Content-Type': 'application/json',
                 'User-Agent': 'n8n-amazon-sp-api/1.0.0',
                 'x-amz-access-token': accessToken,
@@ -173,22 +186,9 @@ class SpApiRequest {
         }
     }
     static shouldUseAwsSigning(credentials) {
-        // Check if user explicitly enabled AWS signing
+        // Only enable AWS signing if explicitly requested
         const advancedOptions = credentials.advancedOptions;
-        if (advancedOptions?.useAwsSigning) {
-            return true;
-        }
-        // Check if AWS credentials are provided (backwards compatibility)
-        const hasAwsCredentials = credentials.awsAccessKeyId && credentials.awsSecretAccessKey;
-        if (hasAwsCredentials) {
-            return true;
-        }
-        // Check if AWS credentials are in advanced options
-        const hasAdvancedAwsCredentials = advancedOptions?.awsAccessKeyId && advancedOptions?.awsSecretAccessKey;
-        if (hasAdvancedAwsCredentials) {
-            return true;
-        }
-        return false;
+        return Boolean(advancedOptions?.useAwsSigning);
     }
     static validateCredentials(credentials, useAwsSigning) {
         const errors = [];

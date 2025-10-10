@@ -49,8 +49,9 @@ export class RdtClient {
 
 			return response.data.restrictedDataToken;
 		} catch (error) {
-			if (axios.isAxiosError(error) && error.response) {
-				const { status, data } = error.response;
+			const isAxiosErr = (axios as any).isAxiosError?.(error) || (error as any)?.isAxiosError;
+			if (isAxiosErr && (error as any).response) {
+				const { status, data } = (error as any).response;
 				throw new NodeOperationError(
 					{} as any,
 					`RDT authentication failed (${status}): ${data.error_description || data.error || 'Unknown error'}`,

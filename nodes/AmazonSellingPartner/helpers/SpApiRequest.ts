@@ -125,8 +125,11 @@ export class SpApiRequest {
 			auditLogger.logAuthentication(nodeId, authType, true, { endpoint: options.endpoint });
 
 			// Prepare headers
+			const acceptHeader = (options.responseType === 'stream' || options.responseType === 'text')
+				? '*/*'
+				: 'application/json';
 			const headers = {
-				'Accept': options.responseType === 'json' ? 'application/json' : '*/*',
+				'Accept': acceptHeader,
 				'Content-Type': 'application/json',
 				'User-Agent': 'n8n-amazon-sp-api/1.0.0',
 				'x-amz-access-token': accessToken,
