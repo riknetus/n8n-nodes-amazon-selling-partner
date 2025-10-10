@@ -41,14 +41,17 @@ export class LwaClient {
 
 	private static async fetchAccessToken(credentials: ICredentialDataDecryptedObject): Promise<LwaTokenResponse> {
 		try {
+			// Construct form-urlencoded data
+			const formData = new URLSearchParams({
+				grant_type: 'refresh_token',
+				refresh_token: credentials.lwaRefreshToken as string,
+				client_id: credentials.lwaClientId as string,
+				client_secret: credentials.lwaClientSecret as string,
+			});
+
 			const response: AxiosResponse<LwaTokenResponse> = await axios.post(
 				this.TOKEN_ENDPOINT,
-				{
-					grant_type: 'refresh_token',
-					refresh_token: credentials.lwaRefreshToken,
-					client_id: credentials.lwaClientId,
-					client_secret: credentials.lwaClientSecret,
-				},
+				formData.toString(),
 				{
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded',

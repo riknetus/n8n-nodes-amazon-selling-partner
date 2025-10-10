@@ -28,12 +28,14 @@ class LwaClient {
     }
     static async fetchAccessToken(credentials) {
         try {
-            const response = await axios_1.default.post(this.TOKEN_ENDPOINT, {
+            // Construct form-urlencoded data
+            const formData = new URLSearchParams({
                 grant_type: 'refresh_token',
                 refresh_token: credentials.lwaRefreshToken,
                 client_id: credentials.lwaClientId,
                 client_secret: credentials.lwaClientSecret,
-            }, {
+            });
+            const response = await axios_1.default.post(this.TOKEN_ENDPOINT, formData.toString(), {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'User-Agent': 'n8n-amazon-sp-api/1.0.0',
