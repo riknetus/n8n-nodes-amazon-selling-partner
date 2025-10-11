@@ -48,18 +48,22 @@ class LwaClient {
             if (axios_1.default.isAxiosError(error) && error.response) {
                 const { status, data } = error.response;
                 // Log detailed error info for debugging
-                console.error('LWA Token Request Failed:', {
-                    status,
-                    data,
-                    requestUrl: this.TOKEN_ENDPOINT,
-                    clientId: credentials.lwaClientId,
-                });
+                if (!process.env.JEST_SILENT_LOGS) {
+                    console.error('LWA Token Request Failed:', {
+                        status,
+                        data,
+                        requestUrl: this.TOKEN_ENDPOINT,
+                        clientId: credentials.lwaClientId,
+                    });
+                }
                 throw new n8n_workflow_1.NodeOperationError({}, `LWA authentication failed (${status}): ${data.error_description || data.error || JSON.stringify(data)}`, {
                     description: 'Check your LWA credentials and ensure they are valid and not expired. See server logs for details.',
                 });
             }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            console.error('LWA Token Request Error (non-HTTP):', errorMessage);
+            if (!process.env.JEST_SILENT_LOGS) {
+                console.error('LWA Token Request Error (non-HTTP):', errorMessage);
+            }
             throw new n8n_workflow_1.NodeOperationError({}, `LWA request failed: ${errorMessage}`);
         }
     }

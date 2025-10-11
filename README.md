@@ -94,10 +94,30 @@ Create a workflow with the Amazon Selling Partner node:
 Use the `Data Kiosk` resource to run GraphQL queries:
 
 1. Operation `Run Query and Download`
-2. Provide your GraphQL `query`
+2. Provide your GraphQL `query` using the **correct versioned schema** (see guide below)
 3. The node will create the query, poll until `DONE`, then download the document (handles pagination when present)
 
-Grant the “Selling Partner Insights / Data Kiosk” role in Developer Central. If you lack this role, use the `Reports` resource instead.
+**Important:** DataKiosk requires **versioned domain fields**. Example:
+```graphql
+query {
+  analytics_salesAndTraffic_2024_04_24 {
+    salesAndTrafficTrends(
+      asinAggregation: CHILD
+      dateAggregation: DAY
+      startDate: "2024-01-01"
+      endDate: "2024-01-07"
+      filters: { asins: [], marketplaceId: "ATVPDKIKX0DER" }
+    ) {
+      traffic { pageViews sessions }
+      sales { unitsOrdered orderedProductSales { amount currencyCode } }
+    }
+  }
+}
+```
+
+📖 **See [DATA_KIOSK_GUIDE.md](./DATA_KIOSK_GUIDE.md) for complete documentation, examples, and query structure.**
+
+Grant the "Selling Partner Insights / Data Kiosk" role in Developer Central. If you lack this role, use the `Reports` resource instead.
 
 ### 6. Refreshing LWA credentials
 

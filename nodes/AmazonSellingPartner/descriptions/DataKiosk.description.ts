@@ -31,9 +31,33 @@ export const dataKioskFields: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		displayOptions: { show: { resource: ['dataKiosk'], operation: ['createQuery','runQueryAndDownload'] } },
-		default: 'query { sampleQuery { id } }',
-		description: 'GraphQL query string (max 8000 chars after minification)',
-		typeOptions: { rows: 6 },
+		default: `query {
+  analytics_salesAndTraffic_2024_04_24 {
+    salesAndTrafficTrends(
+      asinAggregation: CHILD
+      dateAggregation: DAY
+      startDate: "2024-01-01"
+      endDate: "2024-01-07"
+      filters: { asins: [], marketplaceId: "ATVPDKIKX0DER" }
+    ) {
+      traffic {
+        pageViews
+        sessions
+        unitSessionPercentage
+      }
+      sales {
+        totalOrderItems
+        orderedProductSales { amount currencyCode }
+        unitsOrdered
+      }
+      marketplaceId
+      startDate
+      endDate
+    }
+  }
+}`,
+		description: 'GraphQL query using versioned schema (e.g., analytics_salesAndTraffic_2024_04_24). See <a href="https://sellercentral.amazon.com/datakiosk-schema-explorer" target="_blank">Schema Explorer</a> for available schemas and fields. Max 8000 chars after minification.',
+		typeOptions: { rows: 10 },
 	},
 	{
 		displayName: 'Minify GraphQL',

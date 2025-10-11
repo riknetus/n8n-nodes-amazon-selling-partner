@@ -4,7 +4,6 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeOperationError,
-	NodeConnectionType,
 } from 'n8n-workflow';
 
 import { ordersOperations, ordersFields } from './descriptions/Orders.description';
@@ -36,8 +35,8 @@ export class AmazonSellingPartner implements INodeType {
 		defaults: {
 			name: 'Amazon Selling Partner',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: ['main'] as any,
+		outputs: ['main'] as any,
 		credentials: [
 			{
 				name: 'amazonSpApi',

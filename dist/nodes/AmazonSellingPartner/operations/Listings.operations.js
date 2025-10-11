@@ -165,7 +165,7 @@ async function executeListingsOperation(operation, itemIndex) {
                 source: 'system',
                 outcome: 'success'
             });
-            let allListings = [];
+            const allListings = [];
             let nextToken;
             let requestCount = 0;
             let totalProcessed = 0;

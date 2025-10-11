@@ -18,10 +18,22 @@ exports.executeAnalyticsOperation = executeAnalyticsOperation;
 async function validateAnalyticsAccess(_index) {
     const nodeId = this.getNode().id;
     try {
-        // Only validate Reports API access (Data Kiosk moved to its own resource)
+        let dataKioskAccess = false;
         let reportsAccess = false;
-        let errors = [];
-        // Test Reports API access
+        const errors = [];
+        // Probe Data Kiosk access (lightweight query)
+        try {
+            await SpApiRequest_1.SpApiRequest.makeRequest(this, {
+                method: 'GET',
+                endpoint: '/dataKiosk/2023-11-15/queries',
+                query: { pageSize: 1 },
+            });
+            dataKioskAccess = true;
+        }
+        catch (error) {
+            errors.push(`Data Kiosk: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+        // Probe Reports API access
         try {
             await SpApiRequest_1.SpApiRequest.makeRequest(this, {
                 method: 'GET',
@@ -34,10 +46,10 @@ async function validateAnalyticsAccess(_index) {
             errors.push(`Reports API: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
         const result = {
-            success: reportsAccess,
-            dataKioskAccess: false,
+            success: dataKioskAccess || reportsAccess,
+            dataKioskAccess,
             reportsAccess,
-            recommendedMode: reportsAccess ? 'reports' : 'none',
+            recommendedMode: dataKioskAccess ? 'dataKiosk' : reportsAccess ? 'reports' : 'none',
             errors: errors.length > 0 ? errors : undefined,
             timestamp: new Date().toISOString(),
         };

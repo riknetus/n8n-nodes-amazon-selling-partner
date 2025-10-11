@@ -30,8 +30,8 @@ class AmazonSellingPartner {
         defaults: {
             name: 'Amazon Selling Partner',
         },
-        inputs: ["main" /* NodeConnectionType.Main */],
-        outputs: ["main" /* NodeConnectionType.Main */],
+        inputs: ['main'],
+        outputs: ['main'],
         credentials: [
             {
                 name: 'amazonSpApi',
@@ -54,22 +54,22 @@ class AmazonSellingPartner {
                 noDataExpression: true,
                 options: [
                     {
-                        name: 'Orders',
+                        name: 'Order',
                         value: 'orders',
                         description: 'Manage and retrieve order information',
                     },
                     {
-                        name: 'Invoices',
+                        name: 'Invoice',
                         value: 'invoices',
                         description: 'Download GST and VAT invoice reports',
                     },
                     {
-                        name: 'Shipments',
+                        name: 'Shipment',
                         value: 'shipments',
                         description: 'Confirm or update shipment information',
                     },
                     {
-                        name: 'Listings',
+                        name: 'Listing',
                         value: 'listings',
                         description: 'List and manage product listings (ASINs/SKUs)',
                     },
@@ -84,7 +84,7 @@ class AmazonSellingPartner {
                         description: 'Submit GraphQL queries and download results via Data Kiosk',
                     },
                     {
-                        name: 'Reports',
+                        name: 'Report',
                         value: 'reports',
                         description: 'Generate and download SP-API business and returns reports',
                     },
@@ -117,10 +117,11 @@ class AmazonSellingPartner {
         try {
             for (let i = 0; i < items.length; i++) {
                 switch (resource) {
-                    case 'orders':
+                    case 'orders': {
                         const orderResults = await Orders_operations_1.executeOrdersOperation.call(this, operation, i);
                         returnData.push(...orderResults);
                         break;
+                    }
                     case 'invoices':
                         let invoiceResults = [];
                         switch (operation) {

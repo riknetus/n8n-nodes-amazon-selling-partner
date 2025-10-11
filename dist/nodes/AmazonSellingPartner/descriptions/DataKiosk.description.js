@@ -31,9 +31,33 @@ exports.dataKioskFields = [
         type: 'string',
         required: true,
         displayOptions: { show: { resource: ['dataKiosk'], operation: ['createQuery', 'runQueryAndDownload'] } },
-        default: 'query { sampleQuery { id } }',
-        description: 'GraphQL query string (max 8000 chars after minification)',
-        typeOptions: { rows: 6 },
+        default: `query {
+  analytics_salesAndTraffic_2024_04_24 {
+    salesAndTrafficTrends(
+      asinAggregation: CHILD
+      dateAggregation: DAY
+      startDate: "2024-01-01"
+      endDate: "2024-01-07"
+      filters: { asins: [], marketplaceId: "ATVPDKIKX0DER" }
+    ) {
+      traffic {
+        pageViews
+        sessions
+        unitSessionPercentage
+      }
+      sales {
+        totalOrderItems
+        orderedProductSales { amount currencyCode }
+        unitsOrdered
+      }
+      marketplaceId
+      startDate
+      endDate
+    }
+  }
+}`,
+        description: 'GraphQL query using versioned schema (e.g., analytics_salesAndTraffic_2024_04_24). See <a href="https://sellercentral.amazon.com/datakiosk-schema-explorer" target="_blank">Schema Explorer</a> for available schemas and fields. Max 8000 chars after minification.',
+        typeOptions: { rows: 10 },
     },
     {
         displayName: 'Minify GraphQL',
@@ -47,6 +71,7 @@ exports.dataKioskFields = [
         displayName: 'Pagination Token',
         name: 'paginationToken',
         type: 'string',
+        typeOptions: { password: true },
         displayOptions: { show: { resource: ['dataKiosk'], operation: ['createQuery'] } },
         default: '',
         description: 'Token to fetch a specific page from a previous query',
@@ -96,6 +121,7 @@ exports.dataKioskFields = [
         displayName: 'Pagination Token',
         name: 'paginationToken',
         type: 'string',
+        typeOptions: { password: true },
         displayOptions: { show: { resource: ['dataKiosk'], operation: ['getQueries'] } },
         default: '',
         description: 'Token to fetch a specific page of results',
@@ -142,7 +168,7 @@ exports.dataKioskFields = [
     },
     // Run Query & Download options
     {
-        displayName: 'Poll Interval (ms)',
+        displayName: 'Poll Interval (Ms)',
         name: 'pollIntervalMs',
         type: 'number',
         displayOptions: { show: { resource: ['dataKiosk'], operation: ['runQueryAndDownload'] } },
@@ -151,7 +177,7 @@ exports.dataKioskFields = [
         description: 'How often to poll the query status',
     },
     {
-        displayName: 'Timeout (ms)',
+        displayName: 'Timeout (Ms)',
         name: 'timeoutMs',
         type: 'number',
         displayOptions: { show: { resource: ['dataKiosk'], operation: ['runQueryAndDownload'] } },

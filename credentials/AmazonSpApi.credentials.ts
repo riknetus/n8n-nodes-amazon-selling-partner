@@ -147,10 +147,7 @@ export class AmazonSpApi implements ICredentialType {
 			name: 'marketplaceNotice',
 			type: 'notice',
 			default: '',
-			description: '⚠️ The AWS Region MUST match your Primary Marketplace:
-• North America (us-east-1): US, Canada, Mexico, Brazil
-• Europe (eu-west-1): UK, Germany, France, Italy, Spain, Netherlands, Poland, Sweden, Belgium, India, Turkey, UAE, Saudi Arabia, Egypt
-• Far East (us-west-2): Japan, Australia, Singapore Selecting the wrong region will cause 403 Unauthorized errors!',
+			description: '⚠️ The AWS Region MUST match your Primary Marketplace: • North America (us-east-1): US, Canada, Mexico, Brazil • Europe (eu-west-1): UK, Germany, France, Italy, Spain, Netherlands, Poland, Sweden, Belgium, India, Turkey, UAE, Saudi Arabia, Egypt • Far East (us-west-2): Japan, Australia, Singapore. Selecting the wrong region will cause 403 Unauthorized errors!',
 		},
 		{
 			displayName: 'Authentication Notice',

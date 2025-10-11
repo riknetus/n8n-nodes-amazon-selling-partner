@@ -27,31 +27,43 @@ async function validateAnalyticsAccess(
 ): Promise<INodeExecutionData[]> {
 	const nodeId = this.getNode().id;
 	
-	try {
-		// Only validate Reports API access (Data Kiosk moved to its own resource)
-		let reportsAccess = false;
-		const errors: string[] = [];
+    try {
+        let dataKioskAccess = false;
+        let reportsAccess = false;
+        const errors: string[] = [];
 
-		// Test Reports API access
-		try {
-			await SpApiRequest.makeRequest(this, {
-				method: 'GET',
-				endpoint: '/reports/2021-06-30/reports',
-				query: { reportTypes: 'GET_SALES_AND_TRAFFIC_REPORT' },
-			});
-			reportsAccess = true;
-		} catch (error) {
-			errors.push(`Reports API: ${error instanceof Error ? error.message : 'Unknown error'}`);
-		}
+        // Probe Data Kiosk access (lightweight query)
+        try {
+            await SpApiRequest.makeRequest(this, {
+                method: 'GET',
+                endpoint: '/dataKiosk/2023-11-15/queries',
+                query: { pageSize: 1 },
+            });
+            dataKioskAccess = true;
+        } catch (error) {
+            errors.push(`Data Kiosk: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
 
-		const result = {
-			success: reportsAccess,
-			dataKioskAccess: false, // Always false since Data Kiosk moved to its own resource
-			reportsAccess,
-			recommendedMode: reportsAccess ? 'reports' : 'none',
-			errors: errors.length > 0 ? errors : undefined,
-			timestamp: new Date().toISOString(),
-		};
+        // Probe Reports API access
+        try {
+            await SpApiRequest.makeRequest(this, {
+                method: 'GET',
+                endpoint: '/reports/2021-06-30/reports',
+                query: { reportTypes: 'GET_SALES_AND_TRAFFIC_REPORT' },
+            });
+            reportsAccess = true;
+        } catch (error) {
+            errors.push(`Reports API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+
+        const result = {
+            success: dataKioskAccess || reportsAccess,
+            dataKioskAccess,
+            reportsAccess,
+            recommendedMode: dataKioskAccess ? 'dataKiosk' : reportsAccess ? 'reports' : 'none',
+            errors: errors.length > 0 ? errors : undefined,
+            timestamp: new Date().toISOString(),
+        };
 
 		auditLogger.logEvent({
 			nodeId,
