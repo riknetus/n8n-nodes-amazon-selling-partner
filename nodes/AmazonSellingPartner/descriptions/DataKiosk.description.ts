@@ -47,6 +47,7 @@ export const dataKioskFields: INodeProperties[] = [
 		displayName: 'Pagination Token',
 		name: 'paginationToken',
 		type: 'string',
+		typeOptions: { password: true },
 		displayOptions: { show: { resource: ['dataKiosk'], operation: ['createQuery'] } },
 		default: '',
 		description: 'Token to fetch a specific page from a previous query',
@@ -97,6 +98,7 @@ export const dataKioskFields: INodeProperties[] = [
 		displayName: 'Pagination Token',
 		name: 'paginationToken',
 		type: 'string',
+		typeOptions: { password: true },
 		displayOptions: { show: { resource: ['dataKiosk'], operation: ['getQueries'] } },
 		default: '',
 		description: 'Token to fetch a specific page of results',
@@ -146,7 +148,7 @@ export const dataKioskFields: INodeProperties[] = [
 
 	// Run Query & Download options
 	{
-		displayName: 'Poll Interval (ms)',
+		displayName: 'Poll Interval (Ms)',
 		name: 'pollIntervalMs',
 		type: 'number',
 		displayOptions: { show: { resource: ['dataKiosk'], operation: ['runQueryAndDownload'] } },
@@ -155,7 +157,7 @@ export const dataKioskFields: INodeProperties[] = [
 		description: 'How often to poll the query status',
 	},
 	{
-		displayName: 'Timeout (ms)',
+		displayName: 'Timeout (Ms)',
 		name: 'timeoutMs',
 		type: 'number',
 		displayOptions: { show: { resource: ['dataKiosk'], operation: ['runQueryAndDownload'] } },

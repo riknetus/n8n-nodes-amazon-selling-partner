@@ -299,7 +299,7 @@ export async function executeListingsOperation(
 				outcome: 'success'
 			});
 
-			let allListings: ListingItem[] = [];
+			const allListings: ListingItem[] = [];
 			let nextToken: string | undefined;
 			let requestCount = 0;
 			let totalProcessed = 0;

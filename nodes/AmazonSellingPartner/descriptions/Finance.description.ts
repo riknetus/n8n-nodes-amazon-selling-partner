@@ -53,7 +53,6 @@ export const financeFields: INodeProperties[] = [
 		displayName: 'Financial Event Group Started After',
 		name: 'financialEventGroupStartedAfter',
 		type: 'dateTime',
-		required: false,
 		displayOptions: {
 			show: {
 				resource: ['finance'],
@@ -67,7 +66,6 @@ export const financeFields: INodeProperties[] = [
 		displayName: 'Financial Event Group Started Before',
 		name: 'financialEventGroupStartedBefore',
 		type: 'dateTime',
-		required: false,
 		displayOptions: {
 			show: {
 				resource: ['finance'],
@@ -106,7 +104,7 @@ export const financeFields: INodeProperties[] = [
 				name: 'returnAll',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to return all results by automatically handling pagination',
+				description: 'Whether to return all results or only up to a given limit',
 			},
 		],
 	},
@@ -130,7 +128,6 @@ export const financeFields: INodeProperties[] = [
 		displayName: 'Posted After',
 		name: 'postedAfter',
 		type: 'dateTime',
-		required: false,
 		displayOptions: {
 			show: {
 				resource: ['finance'],
@@ -144,7 +141,6 @@ export const financeFields: INodeProperties[] = [
 		displayName: 'Posted Before',
 		name: 'postedBefore',
 		type: 'dateTime',
-		required: false,
 		displayOptions: {
 			show: {
 				resource: ['finance'],
@@ -183,7 +179,7 @@ export const financeFields: INodeProperties[] = [
 				name: 'returnAll',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to return all results by automatically handling pagination',
+				description: 'Whether to return all results or only up to a given limit',
 			},
 		],
 	},
@@ -232,7 +228,7 @@ export const financeFields: INodeProperties[] = [
 				name: 'returnAll',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to return all results by automatically handling pagination',
+				description: 'Whether to return all results or only up to a given limit',
 			},
 		],
 	},
@@ -267,7 +263,7 @@ export const financeFields: INodeProperties[] = [
 				name: 'returnAll',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to return all results by automatically handling pagination',
+				description: 'Whether to return all results or only up to a given limit',
 			},
 		],
 	},
@@ -283,7 +279,7 @@ export const financeFields: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'A date used for selecting transactions posted after (or on) a specified date. Format: ISO 8601',
+		description: 'A date used for selecting transactions posted after (or on) a specified date. Format: ISO 8601.',
 		required: true,
 	},
 	{
@@ -296,7 +292,7 @@ export const financeFields: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'A date used for selecting transactions posted before (but not on) a specified date. Format: ISO 8601',
+		description: 'A date used for selecting transactions posted before (but not on) a specified date. Format: ISO 8601.',
 	},
 	{
 		displayName: 'Marketplace ID',
@@ -338,12 +334,13 @@ export const financeFields: INodeProperties[] = [
 				name: 'returnAll',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to return all results by automatically handling pagination',
+				description: 'Whether to return all results or only up to a given limit',
 			},
 			{
 				displayName: 'Next Token',
 				name: 'nextToken',
 				type: 'string',
+				typeOptions: { password: true },
 				default: '',
 				description: 'A string token returned in the response to your previous request for the next page of results',
 			},

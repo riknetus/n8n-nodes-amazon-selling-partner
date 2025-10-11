@@ -14,6 +14,8 @@ const Finance_description_1 = require("./descriptions/Finance.description");
 const Finance_operations_1 = require("./operations/Finance.operations");
 const Analytics_description_1 = require("./descriptions/Analytics.description");
 const Analytics_operations_1 = require("./operations/Analytics.operations");
+const DataKiosk_description_1 = require("./descriptions/DataKiosk.description");
+const DataKiosk_operations_1 = require("./operations/DataKiosk.operations");
 const Reports_description_1 = require("./descriptions/Reports.description");
 const Reports_operations_1 = require("./operations/Reports.operations");
 class AmazonSellingPartner {
@@ -77,9 +79,9 @@ class AmazonSellingPartner {
                         description: 'Retrieve financial events, wallet transactions, and payment data',
                     },
                     {
-                        name: 'Analytics',
-                        value: 'analytics',
-                        description: 'Get sales and traffic analytics data by ASIN using Data Kiosk or Reports API',
+                        name: 'Data Kiosk',
+                        value: 'dataKiosk',
+                        description: 'Submit GraphQL queries and download results via Data Kiosk',
                     },
                     {
                         name: 'Reports',
@@ -101,6 +103,8 @@ class AmazonSellingPartner {
             ...Finance_description_1.financeFields,
             ...Analytics_description_1.analyticsOperations,
             ...Analytics_description_1.analyticsFields,
+            ...DataKiosk_description_1.dataKioskOperations,
+            ...DataKiosk_description_1.dataKioskFields,
             ...Reports_description_1.reportsOperations,
             ...Reports_description_1.reportsFields,
         ],
@@ -147,8 +151,13 @@ class AmazonSellingPartner {
                         returnData.push(...financeResults);
                         break;
                     case 'analytics':
+                        // Analytics now only supports validateAccess operation
                         const analyticsResults = await Analytics_operations_1.executeAnalyticsOperation.call(this, operation, i);
                         returnData.push(...analyticsResults);
+                        break;
+                    case 'dataKiosk':
+                        const dataKioskResults = await DataKiosk_operations_1.executeDataKioskOperation.call(this, operation, i);
+                        returnData.push(...dataKioskResults);
                         break;
                     case 'reports':
                         const reportsResults = await Reports_operations_1.executeReportsOperation.call(this, operation, i);

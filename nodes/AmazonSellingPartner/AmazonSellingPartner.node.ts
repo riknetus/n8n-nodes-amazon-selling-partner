@@ -36,8 +36,8 @@ export class AmazonSellingPartner implements INodeType {
 		defaults: {
 			name: 'Amazon Selling Partner',
 		},
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: ['main'],
+		outputs: ['main'],
 		credentials: [
 			{
 				name: 'amazonSpApi',
@@ -60,22 +60,22 @@ export class AmazonSellingPartner implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'Orders',
+						name: 'Order',
 						value: 'orders',
 						description: 'Manage and retrieve order information',
 					},
 					{
-						name: 'Invoices',
+						name: 'Invoice',
 						value: 'invoices',
 						description: 'Download GST and VAT invoice reports',
 					},
 					{
-						name: 'Shipments',
+						name: 'Shipment',
 						value: 'shipments',
 						description: 'Confirm or update shipment information',
 					},
 					{
-						name: 'Listings',
+						name: 'Listing',
 						value: 'listings',
 						description: 'List and manage product listings (ASINs/SKUs)',
 					},
@@ -90,7 +90,7 @@ export class AmazonSellingPartner implements INodeType {
 						description: 'Submit GraphQL queries and download results via Data Kiosk',
 					},
 					{
-						name: 'Reports',
+						name: 'Report',
 						value: 'reports',
 						description: 'Generate and download SP-API business and returns reports',
 					},
@@ -107,6 +107,8 @@ export class AmazonSellingPartner implements INodeType {
 			...listingsFields,
 			...financeOperations,
 			...financeFields,
+			...analyticsOperations,
+			...analyticsFields,
 			...dataKioskOperations,
 			...dataKioskFields,
 			...reportsOperations,
@@ -124,10 +126,11 @@ export class AmazonSellingPartner implements INodeType {
 		try {
 			for (let i = 0; i < items.length; i++) {
 				switch (resource) {
-					case 'orders':
+					case 'orders': {
 						const orderResults = await executeOrdersOperation.call(this, operation, i);
 						returnData.push(...orderResults);
 						break;
+					}
 					case 'invoices':
 						let invoiceResults: INodeExecutionData[] = [];
 						switch (operation) {
@@ -157,14 +160,19 @@ export class AmazonSellingPartner implements INodeType {
 						const financeResults = await executeFinanceOperation.call(this, operation, i);
 						returnData.push(...financeResults);
 						break;
+					case 'analytics':
+						// Analytics now only supports validateAccess operation
+						const analyticsResults = await executeAnalyticsOperation.call(this, operation, i);
+						returnData.push(...analyticsResults);
+						break;
 					case 'dataKiosk':
 						const dataKioskResults = await executeDataKioskOperation.call(this, operation, i);
 						returnData.push(...dataKioskResults);
 						break;
-				case 'reports':
-					const reportsResults = await executeReportsOperation.call(this, operation, i);
-					returnData.push(...reportsResults);
-					break;
+					case 'reports':
+						const reportsResults = await executeReportsOperation.call(this, operation, i);
+						returnData.push(...reportsResults);
+						break;
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
 				}

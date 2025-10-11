@@ -173,7 +173,7 @@ export const ordersFields: INodeProperties[] = [
 				name: 'returnAll',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to return all results by automatically handling pagination',
+				description: 'Whether to return all results or only up to a given limit',
 			},
 		],
 	},
@@ -204,6 +204,6 @@ export const ordersFields: INodeProperties[] = [
 				operation: ['getOrderItems'],
 			},
 		},
-		description: 'Whether to return all order items by automatically handling pagination',
+		description: 'Whether to return all results or only up to a given limit',
 	},
 ]; 

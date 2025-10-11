@@ -215,7 +215,7 @@ export const reportsFields: INodeProperties[] = [
 			},
 		},
 		default: false,
-		description: 'Also output individual Sales/Returns datasets as separate items in addition to consolidated rows.',
+		description: 'Also output individual Sales/Returns datasets as separate items in addition to consolidated rows',
 	},
 	// Refund options
 	{
@@ -229,7 +229,7 @@ export const reportsFields: INodeProperties[] = [
 			},
 		},
 		default: false,
-		description: 'If true, convert refund amounts into the first selected marketplace currency.',
+		description: 'If true, convert refund amounts into the first selected marketplace currency',
 	},
 	// Advanced
 	{
@@ -251,7 +251,7 @@ export const reportsFields: INodeProperties[] = [
 		default: {},
 		options: [
 			{
-				displayName: 'Max Poll Time (minutes)',
+				displayName: 'Max Poll Time (Minutes)',
 				name: 'maxPollTimeMinutes',
 				type: 'number',
 				typeOptions: {
@@ -259,10 +259,10 @@ export const reportsFields: INodeProperties[] = [
 					maxValue: 30,
 				},
 				default: 10,
-				description: 'Maximum time to wait for report generation before failing.',
+				description: 'Maximum time to wait for report generation before failing',
 			},
 			{
-				displayName: 'Poll Interval (seconds)',
+				displayName: 'Poll Interval (Seconds)',
 				name: 'pollIntervalSeconds',
 				type: 'number',
 				typeOptions: {
@@ -270,21 +270,21 @@ export const reportsFields: INodeProperties[] = [
 					maxValue: 240,
 				},
 				default: 30,
-				description: 'How often to check report generation status.',
+				description: 'How often to check report generation status',
 			},
 			{
 				displayName: 'Return Raw Document',
 				name: 'returnRawDocument',
 				type: 'boolean',
 				default: false,
-				description: 'If true, output the raw report document alongside parsed data.',
+				description: 'If true, output the raw report document alongside parsed data',
 			},
 			{
 				displayName: 'Binary Property Name',
 				name: 'binaryPropertyName',
 				type: 'string',
 				default: 'data',
-				description: 'Binary property name when returning raw documents.',
+				description: 'Binary property name when returning raw documents',
 				displayOptions: {
 					show: {
 						returnRawDocument: [true],

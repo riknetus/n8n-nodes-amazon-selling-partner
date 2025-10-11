@@ -1,7 +1,8 @@
 import {
-	IExecuteFunctions,
-	INodeExecutionData,
-	NodeOperationError,
+    IExecuteFunctions,
+    INodeExecutionData,
+    NodeOperationError,
+    IDataObject,
 } from 'n8n-workflow';
 
 import { SpApiRequest } from '../helpers/SpApiRequest';
@@ -64,13 +65,13 @@ async function createQuery(this: IExecuteFunctions, index: number): Promise<INod
 	const body: Record<string, any> = { query };
 	if (paginationToken) body.paginationToken = paginationToken;
 
-	const res = await SpApiRequest.makeRequest<CreateQueryResponse>(this, {
+    const res = await SpApiRequest.makeRequest<CreateQueryResponse>(this, {
 		method: 'POST',
 		endpoint: `${DATA_KIOSK_BASE}/queries`,
 		body,
 	});
 
-	return [{ json: res.data }];
+    return [{ json: { queryId: res.data.queryId } as IDataObject }];
 }
 
 async function getQueries(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
@@ -87,22 +88,22 @@ async function getQueries(this: IExecuteFunctions, index: number): Promise<INode
 	if (createdUntil) query.createdUntil = createdUntil;
 	if (paginationToken) query.paginationToken = paginationToken;
 
-	const res = await SpApiRequest.makeRequest<any>(this, {
+    const res = await SpApiRequest.makeRequest<any>(this, {
 		method: 'GET',
 		endpoint: `${DATA_KIOSK_BASE}/queries`,
 		query,
 	});
 
-	return [{ json: res.data }];
+    return [{ json: res.data as unknown as IDataObject }];
 }
 
 async function getQuery(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	const queryId = this.getNodeParameter('queryId', index) as string;
-	const res = await SpApiRequest.makeRequest<QueryStatus>(this, {
+    const res = await SpApiRequest.makeRequest<QueryStatus>(this, {
 		method: 'GET',
 		endpoint: `${DATA_KIOSK_BASE}/queries/${encodeURIComponent(queryId)}`,
 	});
-	return [{ json: res.data }];
+    return [{ json: res.data as unknown as IDataObject }];
 }
 
 async function cancelQuery(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
@@ -159,13 +160,11 @@ async function runQueryAndDownload(this: IExecuteFunctions, index: number): Prom
 		throw new NodeOperationError(this.getNode(), 'GraphQL query exceeds 8000 characters after minification');
 	}
 
-	const startedAt = Date.now();
-	const nodeId = this.getNode().id;
+    const startedAt = Date.now();
 	const items: INodeExecutionData[] = [];
 
 	let paginationToken: string | undefined = undefined;
 	let pageIndex = 0;
-	let totalDocuments = 0;
 
 	const requestMetrics = (success: boolean, errorCode?: string) => {
 		metricsCollector.recordApiRequest('dataKiosk', Date.now() - startedAt, success, errorCode);
@@ -173,12 +172,12 @@ async function runQueryAndDownload(this: IExecuteFunctions, index: number): Prom
 
 	do {
 		// 1) Create query
-		const create = await SpApiRequest.makeRequest<CreateQueryResponse>(this, {
+		const createRes = await SpApiRequest.makeRequest<CreateQueryResponse>(this, {
 			method: 'POST',
 			endpoint: `${DATA_KIOSK_BASE}/queries`,
 			body: paginationToken ? { query, paginationToken } : { query },
 		});
-		const queryId = create.data.queryId;
+		const queryId: string = createRes.data.queryId;
 
 		// 2) Poll status
 		let status: QueryStatus | undefined;
@@ -188,11 +187,11 @@ async function runQueryAndDownload(this: IExecuteFunctions, index: number): Prom
 				throw new NodeOperationError(this.getNode(), 'Timeout while waiting for Data Kiosk query to complete');
 			}
 			await new Promise((r) => setTimeout(r, pollIntervalMs));
-			const res = await SpApiRequest.makeRequest<QueryStatus>(this, {
+			const statusRes = await SpApiRequest.makeRequest<QueryStatus>(this, {
 				method: 'GET',
 				endpoint: `${DATA_KIOSK_BASE}/queries/${encodeURIComponent(queryId)}`,
 			});
-			status = res.data;
+			status = statusRes.data;
 		} while (status && (status.processingStatus === 'IN_QUEUE' || status.processingStatus === 'IN_PROGRESS'));
 
 		if (!status) {
@@ -200,7 +199,7 @@ async function runQueryAndDownload(this: IExecuteFunctions, index: number): Prom
 			throw new NodeOperationError(this.getNode(), 'Unable to fetch query status');
 		}
 
-		if (status.processingStatus === 'FATAL') {
+        if (status.processingStatus === 'FATAL') {
 			if (status.errorDocumentId) {
 				const docMeta = await SpApiRequest.makeRequest<GetDocumentResponse>(this, {
 					method: 'GET',
@@ -217,13 +216,12 @@ async function runQueryAndDownload(this: IExecuteFunctions, index: number): Prom
 		}
 
 		// 3) Download data document if present
-		if (status.dataDocumentId) {
+        if (status.dataDocumentId) {
 			const meta = await SpApiRequest.makeRequest<GetDocumentResponse>(this, {
 				method: 'GET',
 				endpoint: `${DATA_KIOSK_BASE}/documents/${encodeURIComponent(status.dataDocumentId)}`,
 			});
 			const { buffer, contentType } = await downloadPresigned(meta.data.documentUrl);
-			totalDocuments += 1;
 
 			if (output === 'text') {
 				items.push({ json: {
@@ -261,10 +259,9 @@ async function runQueryAndDownload(this: IExecuteFunctions, index: number): Prom
 		pageIndex += 1;
 		if (multiPageHandling === 'stopAfterFirst') break;
 		requestMetrics(true);
-	} while (paginationToken);
+    } while (paginationToken);
 
-	metricsCollector.recordCustomMetric('dataKiosk', 'documentsDownloaded', totalDocuments, nodeId);
-	return items;
+    return items;
 }
 
 

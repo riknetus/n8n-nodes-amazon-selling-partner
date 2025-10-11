@@ -70,8 +70,8 @@ class SpApiRequest {
                     }
                 });
             }
-            // Apply rate limiting using group-based rate limits
-            const rateLimitGroup = (0, rateLimitConfig_1.getEndpointGroup)(options.endpoint);
+            // Apply rate limiting using group-based rate limits (method-aware)
+            const rateLimitGroup = (0, rateLimitConfig_1.getEndpointGroup)(options.method, options.endpoint);
             await this.rateLimiter.waitForToken(rateLimitGroup);
             // Get access token (LWA or RDT based on restricted resources)
             let accessToken;
