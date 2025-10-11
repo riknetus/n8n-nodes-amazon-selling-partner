@@ -13,7 +13,7 @@ A production-grade n8n custom node for Amazon Selling Partner API with comprehen
 - **Product Listings**: Manage product catalog and inventory operations
 - **Invoices & Reports**: Generate and retrieve invoices and financial reports
 - **Reports (Sales & Returns)**: Pull Sales & Traffic business reports, FBA/MFN returns, refunds, and a consolidated sales vs returns view by ASIN/SKU
-- **Simplified Authentication**: LWA (Login with Amazon) credentials only - AWS credentials optional
+- **Simplified Authentication**: LWA (Login with Amazon) only. AWS IAM is not used.
 - **Multi-Marketplace Support**: Support for all Amazon marketplaces globally
 - **Automatic Pagination**: Handle large result sets seamlessly
 
@@ -68,18 +68,8 @@ For most use cases, you only need LWA credentials:
    - **LWA Client Secret**: From your SP-API application  
    - **LWA Refresh Token**: Generated during authorization
 
-#### Advanced Setup (AWS SigV4 – required for live SP-API)
-Amazon expects *every* call to be authenticated with an LWA access token **and** signed with AWS Signature Version 4. Skip the AWS keys and Amazon responds with `401/403 Authentication failed`.
-
-Follow these steps (full walkthrough in `CREDENTIALS_GUIDE.md`):
-
-1. Create an IAM user in the AWS account that owns your SP-API application (`IAM → Users → Create user`).
-2. Attach a policy that allows `execute-api:Invoke` on the SP-API execute-api ARNs (see the minimal/region-scoped JSON in the guide).
-3. Generate Access Key ID and Secret Access Key (`IAM → Users → <user> → Security credentials → Create access key`, choose *Application running outside AWS*).
-4. In n8n credentials, expand **Advanced Options** and paste the keys.
-5. Enable **Use AWS SigV4 Signing**. Optional: fill **AWS Role ARN** if you require assume-role; the node can sign directly with the user keys.
-
-Keep the keys secure and rotate them regularly. If you add a new SP-API role later, re-authorize the seller to issue a fresh refresh token.
+#### Authentication
+This node authenticates with SP-API via Login with Amazon (LWA) only. AWS IAM SigV4 signing has been intentionally disabled to reduce setup friction in n8n. For endpoints requiring Restricted Data Tokens (PII), the node automatically exchanges the LWA token for an RDT.
 
 ### 3. Grant Required SP-API Roles
 
@@ -94,8 +84,8 @@ Create a workflow with the Amazon Selling Partner node:
 
 1. Resource `sellers`, operation `getMarketplaceParticipations`.
 2. Execute the node.
-   - **200 OK** → credentials and signing are correct.
-   - **401 Unauthorized** → AWS signing disabled/incorrect keys.
+   - **200 OK** → credentials are correct.
+   - **401 Unauthorized** → LWA credentials invalid/refresh token expired.
    - **403 Forbidden** → seller hasn’t authorized the required role or the app lacks it.
 
 ### 5. Running Analytics

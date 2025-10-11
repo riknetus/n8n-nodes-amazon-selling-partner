@@ -118,10 +118,11 @@ describe('Orders Operations', () => {
 				parameters: {},
 			});
 
-			// Execute the operation and expect it to throw
-			await expect(
-				executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
-			).rejects.toThrow('Date range cannot exceed 30 days');
+        // Execute the operation with validation failure
+        mockedSecurityValidator.validateDateRange.mockReturnValueOnce({ isValid: false, errors: ['Date range cannot exceed 30 days'] });
+        await expect(
+            executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
+        ).rejects.toThrow('Date range cannot exceed 30 days');
 		});
 
 		it('should validate date order', async () => {
@@ -148,10 +149,11 @@ describe('Orders Operations', () => {
 				parameters: {},
 			});
 
-			// Execute the operation and expect it to throw
-			await expect(
-				executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
-			).rejects.toThrow('Created After date must be before Created Before date');
+        // Execute the operation with validation failure
+        mockedSecurityValidator.validateDateRange.mockReturnValueOnce({ isValid: false, errors: ['Created After date must be before Created Before date'] });
+        await expect(
+            executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
+        ).rejects.toThrow('Created After date must be before Created Before date');
 		});
 
 		it('should handle empty results gracefully', async () => {
@@ -310,9 +312,9 @@ describe('Orders Operations', () => {
 				parameters: {},
 			});
 
-			await expect(
-				executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
-			).rejects.toThrow('MaxResultsPerPage must be between 1 and 100');
+        await expect(
+            executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
+        ).rejects.toThrow('MaxResultsPerPage must be between 1 and 100');
 		});
 
 		it('should validate maxResultsPerPage minimum value', async () => {

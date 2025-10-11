@@ -97,8 +97,8 @@ describe('SpApiRequest', () => {
 		});
 	});
 
-	describe('AWS Signing Behavior', () => {
-		it('should not use AWS signing by default', async () => {
+  describe('AWS Signing Behavior', () => {
+    it('should not use AWS signing (LWA-only enforced)', async () => {
 			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
 
 			await SpApiRequest.makeRequest(mockExecuteFunctions, {
@@ -112,62 +112,6 @@ describe('SpApiRequest', () => {
 					headers: expect.objectContaining({
 						'x-amz-access-token': 'lwa-token-123',
 						'User-Agent': 'n8n-amazon-sp-api/1.0.0',
-					}),
-				})
-			);
-		});
-
-		it('should use AWS signing when explicitly enabled', async () => {
-			const credentialsWithAwsSigning = {
-				...mockCredentials,
-				advancedOptions: {
-					useAwsSigning: true,
-					awsAccessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-					awsSecretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-				},
-			};
-
-			mockExecuteFunctions.getCredentials = jest.fn().mockResolvedValue(credentialsWithAwsSigning);
-			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
-
-			// Mock SigV4Signer
-			const mockSigV4Signer = require('../SigV4Signer');
-			mockSigV4Signer.SigV4Signer.signRequest = jest.fn().mockResolvedValue({
-				'Authorization': 'AWS4-HMAC-SHA256 ...',
-				'X-Amz-Date': '20240101T000000Z',
-			});
-
-			await SpApiRequest.makeRequest(mockExecuteFunctions, {
-				method: 'GET',
-				endpoint: '/orders/v0/orders',
-			});
-
-			expect(mockSigV4Signer.SigV4Signer.signRequest).toHaveBeenCalled();
-		});
-
-		it('should not auto-enable AWS signing when AWS credentials exist but useAwsSigning is false', async () => {
-			const credentialsWithAwsKeys = {
-				...mockCredentials,
-				awsAccessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-				awsSecretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-				advancedOptions: {
-					useAwsSigning: false,
-				},
-			};
-
-			mockExecuteFunctions.getCredentials = jest.fn().mockResolvedValue(credentialsWithAwsKeys);
-			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
-
-			await SpApiRequest.makeRequest(mockExecuteFunctions, {
-				method: 'GET',
-				endpoint: '/orders/v0/orders',
-			});
-
-			// Verify AWS signing was not used
-			expect(mockedAxios).toHaveBeenCalledWith(
-				expect.objectContaining({
-					headers: expect.not.objectContaining({
-						'Authorization': expect.any(String),
 					}),
 				})
 			);
