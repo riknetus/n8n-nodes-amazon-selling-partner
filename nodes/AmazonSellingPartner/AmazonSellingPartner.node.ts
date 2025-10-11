@@ -19,6 +19,8 @@ import { financeOperations, financeFields } from './descriptions/Finance.descrip
 import { executeFinanceOperation } from './operations/Finance.operations';
 import { analyticsOperations, analyticsFields } from './descriptions/Analytics.description';
 import { executeAnalyticsOperation } from './operations/Analytics.operations';
+import { dataKioskOperations, dataKioskFields } from './descriptions/DataKiosk.description';
+import { executeDataKioskOperation } from './operations/DataKiosk.operations';
 import { reportsOperations, reportsFields } from './descriptions/Reports.description';
 import { executeReportsOperation } from './operations/Reports.operations';
 
@@ -83,9 +85,9 @@ export class AmazonSellingPartner implements INodeType {
 						description: 'Retrieve financial events, wallet transactions, and payment data',
 					},
 					{
-						name: 'Analytics',
-						value: 'analytics',
-						description: 'Get sales and traffic analytics data by ASIN using Data Kiosk or Reports API',
+						name: 'Data Kiosk',
+						value: 'dataKiosk',
+						description: 'Submit GraphQL queries and download results via Data Kiosk',
 					},
 					{
 						name: 'Reports',
@@ -105,8 +107,8 @@ export class AmazonSellingPartner implements INodeType {
 			...listingsFields,
 			...financeOperations,
 			...financeFields,
-			...analyticsOperations,
-			...analyticsFields,
+			...dataKioskOperations,
+			...dataKioskFields,
 			...reportsOperations,
 			...reportsFields,
 		],
@@ -155,9 +157,9 @@ export class AmazonSellingPartner implements INodeType {
 						const financeResults = await executeFinanceOperation.call(this, operation, i);
 						returnData.push(...financeResults);
 						break;
-					case 'analytics':
-						const analyticsResults = await executeAnalyticsOperation.call(this, operation, i);
-						returnData.push(...analyticsResults);
+					case 'dataKiosk':
+						const dataKioskResults = await executeDataKioskOperation.call(this, operation, i);
+						returnData.push(...dataKioskResults);
 						break;
 				case 'reports':
 					const reportsResults = await executeReportsOperation.call(this, operation, i);

@@ -14,15 +14,9 @@ export const analyticsOperations: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Sales & Traffic by ASIN',
-				value: 'salesAndTrafficByAsin',
-				description: 'Get sales and traffic analytics data by ASIN',
-				action: 'Get sales & traffic by ASIN',
-			},
-			{
 				name: 'Validate Access',
 				value: 'validateAccess',
-				description: 'Test access to Analytics/Data Kiosk APIs',
+				description: 'Test access to Reports API (Data Kiosk moved to its own resource)',
 				action: 'Validate analytics access',
 			},
 		],
@@ -39,8 +33,8 @@ export const analyticsFields: INodeProperties[] = [
 		required: true,
 		displayOptions: {
 			show: {
-				resource: ['analytics'],
-				operation: ['salesAndTrafficByAsin'],
+                resource: ['analytics'],
+                operation: ['salesAndTrafficByAsin'],
 			},
 		},
 		options: [
@@ -341,118 +335,7 @@ export const analyticsFields: INodeProperties[] = [
 		],
 	},
 
-	// === METRICS SELECTION ===
-	{
-		displayName: 'Metrics Selection',
-		name: 'metricsSelection',
-		type: 'fixedCollection',
-		typeOptions: {
-			multipleValues: true,
-		},
-		displayOptions: {
-			show: {
-				resource: ['analytics'],
-				operation: ['salesAndTrafficByAsin'],
-			},
-		},
-		default: {
-			trafficMetrics: [{ metrics: ['sessions', 'pageViews'] }],
-			salesMetrics: [{ metrics: ['unitsOrdered', 'orderedProductSales'] }],
-			conversionMetrics: [{ metrics: ['unitSessionPercentage'] }],
-		},
-		options: [
-			{
-				displayName: 'Traffic Metrics',
-				name: 'trafficMetrics',
-				values: [
-					{
-						displayName: 'Traffic Metrics',
-						name: 'metrics',
-						type: 'multiOptions',
-						options: [
-							{ name: 'Sessions', value: 'sessions' },
-							{ name: 'Page Views', value: 'pageViews' },
-							{ name: 'Page Views per Session', value: 'pageViewsPerSession' },
-							{ name: 'Sessions %', value: 'sessionsPercent' },
-							{ name: 'Page Views %', value: 'pageViewsPercent' },
-						],
-						default: ['sessions', 'pageViews'],
-						description: 'Select traffic-related metrics',
-					},
-				],
-			},
-			{
-				displayName: 'Sales Metrics',
-				name: 'salesMetrics',
-				values: [
-					{
-						displayName: 'Sales Metrics',
-						name: 'metrics',
-						type: 'multiOptions',
-						options: [
-							{ name: 'Units Ordered', value: 'unitsOrdered' },
-							{ name: 'Units Ordered (B2B)', value: 'unitsOrderedB2B' },
-							{ name: 'Ordered Product Sales', value: 'orderedProductSales' },
-							{ name: 'Ordered Product Sales (B2B)', value: 'orderedProductSalesB2B' },
-						],
-						default: ['unitsOrdered', 'orderedProductSales'],
-						description: 'Select sales-related metrics',
-					},
-				],
-			},
-			{
-				displayName: 'Conversion Metrics',
-				name: 'conversionMetrics',
-				values: [
-					{
-						displayName: 'Conversion Metrics',
-						name: 'metrics',
-						type: 'multiOptions',
-						options: [
-							{ name: 'Unit Session Percentage', value: 'unitSessionPercentage' },
-							{ name: 'Unit Session Percentage (B2B)', value: 'unitSessionPercentageB2B' },
-						],
-						default: ['unitSessionPercentage'],
-						description: 'Select conversion-related metrics',
-					},
-				],
-			},
-			{
-				displayName: 'Buy Box Metrics',
-				name: 'buyboxMetrics',
-				values: [
-					{
-						displayName: 'Buy Box Metrics',
-						name: 'metrics',
-						type: 'multiOptions',
-						options: [
-							{ name: 'Buy Box Percentage', value: 'buyBoxPercentage' },
-						],
-						default: [],
-						description: 'Select Buy Box-related metrics',
-					},
-				],
-			},
-			{
-				displayName: 'Computed Metrics',
-				name: 'computedMetrics',
-				values: [
-					{
-						displayName: 'Computed Metrics',
-						name: 'metrics',
-						type: 'multiOptions',
-						options: [
-							{ name: 'Average Order Value', value: 'aov' },
-							{ name: 'Units per Session', value: 'unitsPerSession' },
-							{ name: 'Sales per Session', value: 'salesPerSession' },
-						],
-						default: [],
-						description: 'Select computed metrics (calculated client-side)',
-					},
-				],
-			},
-		],
-	},
+    // NOTE: All metric selection UI removed; Data Kiosk moved to dedicated resource
 
 	// === SORTING & LIMITING ===
 	{

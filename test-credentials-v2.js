@@ -55,17 +55,10 @@ async function testMultipleEndpoints() {
             role: 'Inventory and Order Tracking (Reports)'
         },
         {
-            name: 'Sales and Traffic Report (Data Kiosk)',
-            url: `${endpoint}/dataKiosk/2024-04-24/analytics/salesAndTraffic`,
-            method: 'POST',
-            body: {
-                startDate: new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0],
-                endDate: new Date().toISOString().split('T')[0],
-                granularity: 'DAILY',
-                marketplaceIds: [marketplaceId],
-                metrics: ['sessions', 'pageViews']
-            },
-            role: 'Brand Analytics (NOT the same as Analytics role!)'
+            name: 'Data Kiosk Queries (probe)',
+            url: `${endpoint}/dataKiosk/2023-11-15/queries?pageSize=1`,
+            method: 'GET',
+            role: 'Selling Partner Insights / Data Kiosk',
         },
         {
             name: 'Inventory Summaries',

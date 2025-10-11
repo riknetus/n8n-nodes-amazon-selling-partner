@@ -13,6 +13,7 @@ A production-grade n8n custom node for Amazon Selling Partner API with comprehen
 - **Product Listings**: Manage product catalog and inventory operations
 - **Invoices & Reports**: Generate and retrieve invoices and financial reports
 - **Reports (Sales & Returns)**: Pull Sales & Traffic business reports, FBA/MFN returns, refunds, and a consolidated sales vs returns view by ASIN/SKU
+- **Data Kiosk (GraphQL)**: Submit GraphQL queries to `/dataKiosk/2023-11-15`, poll status, and download results
 - **Simplified Authentication**: LWA (Login with Amazon) only. AWS IAM is not used.
 - **Multi-Marketplace Support**: Support for all Amazon marketplaces globally
 - **Automatic Pagination**: Handle large result sets seamlessly
@@ -88,11 +89,15 @@ Create a workflow with the Amazon Selling Partner node:
    - **401 Unauthorized** → LWA credentials invalid/refresh token expired.
    - **403 Forbidden** → seller hasn’t authorized the required role or the app lacks it.
 
-### 5. Running Analytics
+### 5. Data Kiosk (GraphQL)
 
-- Set `Analytics → Advanced Options → analyticsMode = auto`. The node tries Data Kiosk first and falls back to Reports if necessary.
-- If you know you lack Data Kiosk role, set `analyticsMode = reports` to skip the 403.
-- Provide `marketplaceIds`, date range, and ASIN/SKU filters that match the target mode.
+Use the `Data Kiosk` resource to run GraphQL queries:
+
+1. Operation `Run Query and Download`
+2. Provide your GraphQL `query`
+3. The node will create the query, poll until `DONE`, then download the document (handles pagination when present)
+
+Grant the “Selling Partner Insights / Data Kiosk” role in Developer Central. If you lack this role, use the `Reports` resource instead.
 
 ### 6. Refreshing LWA credentials
 

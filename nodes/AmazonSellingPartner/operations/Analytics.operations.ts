@@ -9,11 +9,10 @@ import { securityValidator } from '../core/SecurityValidator';
 import { metricsCollector } from '../core/MetricsCollector';
 import { auditLogger } from '../core/AuditLogger';
 import {
-	ANALYTICS_METRICS,
-	SCHEMA_VERSIONS,
-	DEFAULT_SETTINGS,
-	buildDataKioskEndpoint,
-	REPORTS_FALLBACK_MAPPING,
+    ANALYTICS_METRICS,
+    SCHEMA_VERSIONS,
+    DEFAULT_SETTINGS,
+    REPORTS_FALLBACK_MAPPING,
 } from './analytics/constants';
 
 // Core interfaces
@@ -90,21 +89,12 @@ async function validateAnalyticsAccess(
 	const nodeId = this.getNode().id;
 	
 	try {
-		// Test Data Kiosk access
-		let dataKioskAccess = false;
+        // Data Kiosk moved to its own resource; only validate Reports here
+        let dataKioskAccess = false;
 		let reportsAccess = false;
 		let errors: string[] = [];
 
-		try {
-			const dataKioskEndpoint = buildDataKioskEndpoint('2024-04-24', 'salesAndTraffic');
-			await SpApiRequest.makeRequest(this, {
-				method: 'GET',
-				endpoint: `${dataKioskEndpoint}/validate`,
-			});
-			dataKioskAccess = true;
-		} catch (error) {
-			errors.push(`Data Kiosk: ${error instanceof Error ? error.message : 'Unknown error'}`);
-		}
+        // Skip attempting Data Kiosk probe; access validation is now under Data Kiosk resource
 
 		// Test Reports API access
 		try {
@@ -122,7 +112,7 @@ async function validateAnalyticsAccess(
 			success: dataKioskAccess || reportsAccess,
 			dataKioskAccess,
 			reportsAccess,
-			recommendedMode: dataKioskAccess ? 'dataKiosk' : reportsAccess ? 'reports' : 'none',
+            recommendedMode: reportsAccess ? 'reports' : 'none',
 			errors: errors.length > 0 ? errors : undefined,
 			timestamp: new Date().toISOString(),
 		};

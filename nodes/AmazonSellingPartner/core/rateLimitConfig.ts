@@ -34,12 +34,12 @@ export const RATE_LIMIT_GROUPS: Record<string, RateLimitConfig> = {
 		description: 'Reports API operations: createReport, getReport, getReportDocument'
 	},
 	
-	// Analytics API - Data Kiosk and Analytics operations
-	'analytics': {
-		rate: 0.0167, // 1 request per 60 seconds (conservative, similar to reports)
-		burst: 10,
-		description: 'Analytics and Data Kiosk API operations: salesAndTraffic, etc.'
-	},
+	// Data Kiosk (GraphQL) groups
+	'dataKiosk-queries-create': { rate: 0.0167, burst: 15, description: 'POST /dataKiosk/2023-11-15/queries' },
+	'dataKiosk-queries-list': { rate: 0.0222, burst: 10, description: 'GET /dataKiosk/2023-11-15/queries' },
+	'dataKiosk-queries-get': { rate: 2.0, burst: 15, description: 'GET /dataKiosk/2023-11-15/queries/{id}' },
+	'dataKiosk-queries-cancel': { rate: 0.0222, burst: 10, description: 'DELETE /dataKiosk/2023-11-15/queries/{id}' },
+	'dataKiosk-documents': { rate: 0.0167, burst: 15, description: 'GET /dataKiosk/2023-11-15/documents/{id}' },
 	
 	// Default fallback for unclassified endpoints
 	'default': {
@@ -50,28 +50,30 @@ export const RATE_LIMIT_GROUPS: Record<string, RateLimitConfig> = {
 };
 
 // Endpoint pattern to group mapping
-export const ENDPOINT_TO_GROUP: Array<{ pattern: RegExp; group: string }> = [
+export const ENDPOINT_TO_GROUP: Array<{ method: '*' | 'GET' | 'POST' | 'DELETE'; pattern: RegExp; group: string }> = [
 	// Orders API patterns
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/orderItems/, group: 'orders-detail' },
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/orderAddress/, group: 'orders-detail' },
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/buyerInfo/, group: 'orders-detail' },
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/orderItemsBuyerInfo/, group: 'orders-detail' },
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/regulatedInfo/, group: 'orders-detail' },
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+$/, group: 'orders-detail' }, // getOrder
-	{ pattern: /^\/orders\/v0\/orders\/?(\?.*)?$/, group: 'orders-list' }, // getOrders
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipment/, group: 'orders-update' },
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipmentConfirmation$/, group: 'orders-update' },
-	{ pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipmentStatus$/, group: 'orders-update' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/orderItems/, group: 'orders-detail' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/orderAddress/, group: 'orders-detail' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/buyerInfo/, group: 'orders-detail' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/orderItemsBuyerInfo/, group: 'orders-detail' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/regulatedInfo/, group: 'orders-detail' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+$/, group: 'orders-detail' }, // getOrder
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/?(\?.*)?$/, group: 'orders-list' }, // getOrders
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipment/, group: 'orders-update' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipmentConfirmation$/, group: 'orders-update' },
+	{ method: '*', pattern: /^\/orders\/v0\/orders\/[^\/]+\/shipmentStatus$/, group: 'orders-update' },
 	
 	// Reports API patterns
-	{ pattern: /^\/reports\/2021-06-30\/reports\/?(\?.*)?$/, group: 'reports' }, // createReport, getReports
-	{ pattern: /^\/reports\/2021-06-30\/reports\/[^\/]+$/, group: 'reports' }, // getReport
-	{ pattern: /^\/reports\/2021-06-30\/documents\/[^\/]+$/, group: 'reports' }, // getReportDocument
+	{ method: '*', pattern: /^\/reports\/2021-06-30\/reports\/?(\?.*)?$/, group: 'reports' }, // createReport, getReports
+	{ method: '*', pattern: /^\/reports\/2021-06-30\/reports\/[^\/]+$/, group: 'reports' }, // getReport
+	{ method: '*', pattern: /^\/reports\/2021-06-30\/documents\/[^\/]+$/, group: 'reports' }, // getReportDocument
 	
-	// Analytics API patterns
-	{ pattern: /^\/analytics\/\d{4}-\d{2}-\d{2}\/.*$/, group: 'analytics' }, // Analytics API endpoints
-	{ pattern: /^\/dataKiosk\/\d{4}-\d{2}-\d{2}\/analytics\/.*$/, group: 'analytics' }, // Data Kiosk Analytics endpoints
-	{ pattern: /^\/dataKiosk\/\d{4}-\d{2}-\d{2}\/salesAndTraffic.*$/, group: 'analytics' }, // Data Kiosk Sales & Traffic
+	// Data Kiosk GraphQL patterns
+	{ method: 'POST', pattern: /^\/dataKiosk\/2023-11-15\/queries$/, group: 'dataKiosk-queries-create' },
+	{ method: 'GET', pattern: /^\/dataKiosk\/2023-11-15\/queries(\?.*)?$/, group: 'dataKiosk-queries-list' },
+	{ method: 'GET', pattern: /^\/dataKiosk\/2023-11-15\/queries\/[^\/]+$/, group: 'dataKiosk-queries-get' },
+	{ method: 'DELETE', pattern: /^\/dataKiosk\/2023-11-15\/queries\/[^\/]+$/, group: 'dataKiosk-queries-cancel' },
+	{ method: 'GET', pattern: /^\/dataKiosk\/2023-11-15\/documents\/[^\/]+$/, group: 'dataKiosk-documents' },
 	
 	// Add more patterns as needed for other APIs
 ];
@@ -79,9 +81,9 @@ export const ENDPOINT_TO_GROUP: Array<{ pattern: RegExp; group: string }> = [
 /**
  * Get the rate limit group for a given endpoint
  */
-export function getEndpointGroup(endpoint: string): string {
-	for (const { pattern, group } of ENDPOINT_TO_GROUP) {
-		if (pattern.test(endpoint)) {
+export function getEndpointGroup(method: string, endpoint: string): string {
+	for (const { method: m, pattern, group } of ENDPOINT_TO_GROUP) {
+		if ((m === '*' || m === method) && pattern.test(endpoint)) {
 			return group;
 		}
 	}
