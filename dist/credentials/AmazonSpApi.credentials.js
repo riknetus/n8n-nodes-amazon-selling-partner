@@ -191,42 +191,11 @@ class AmazonSpApi {
             default: {},
             options: [
                 {
-                    displayName: 'AWS Access Key ID',
-                    name: 'awsAccessKeyId',
-                    type: 'string',
-                    default: '',
-                    description: 'AWS Access Key ID for your IAM user with SP-API permissions (only required if AWS SigV4 signing is explicitly enabled)',
-                },
-                {
-                    displayName: 'AWS Secret Access Key',
-                    name: 'awsSecretAccessKey',
-                    type: 'string',
-                    typeOptions: {
-                        password: true,
-                    },
-                    default: '',
-                    description: 'AWS Secret Access Key for your IAM user (only required if AWS SigV4 signing is explicitly enabled)',
-                },
-                {
-                    displayName: 'AWS Role ARN',
-                    name: 'awsRoleArn',
-                    type: 'string',
-                    default: '',
-                    description: 'AWS Role ARN to assume for SP-API calls (for enhanced security)',
-                },
-                {
                     displayName: 'SP-API Endpoint Override',
                     name: 'spApiEndpoint',
                     type: 'string',
                     default: '',
                     description: 'Override the default SP-API endpoint URL',
-                },
-                {
-                    displayName: 'Use AWS SigV4 Signing',
-                    name: 'useAwsSigning',
-                    type: 'boolean',
-                    default: false,
-                    description: 'Enable AWS SigV4 request signing (requires AWS credentials above). Most operations work with LWA-only authentication.',
                 },
             ],
         },
@@ -234,13 +203,6 @@ class AmazonSpApi {
     authenticate = {
         type: 'generic',
         properties: {},
-    };
-    test = {
-        request: {
-            baseURL: '={{$credentials.spApiEndpoint || $self["getSpApiEndpoint"]($credentials.awsRegion, $credentials.environment)}}',
-            url: '/sellers/v1/marketplaceParticipations',
-            method: 'GET',
-        },
     };
 }
 exports.AmazonSpApi = AmazonSpApi;

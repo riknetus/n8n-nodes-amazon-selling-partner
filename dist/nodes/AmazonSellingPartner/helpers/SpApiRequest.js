@@ -8,7 +8,6 @@ const axios_1 = __importDefault(require("axios"));
 const url_1 = require("url");
 const n8n_workflow_1 = require("n8n-workflow");
 const LwaClient_1 = require("./LwaClient");
-const SigV4Signer_1 = require("./SigV4Signer");
 const RdtClient_1 = require("./RdtClient");
 const RateLimiter_1 = require("../core/RateLimiter");
 const ErrorHandler_1 = require("../core/ErrorHandler");
@@ -23,10 +22,8 @@ class SpApiRequest {
         const nodeId = executeFunctions.getNode().id;
         try {
             const credentials = await executeFunctions.getCredentials('amazonSpApi');
-            // Check if we should use AWS signing
-            const useAwsSigning = this.shouldUseAwsSigning(credentials);
-            // Security validation (modified for optional AWS credentials)
-            const credentialValidation = this.validateCredentials(credentials, useAwsSigning);
+            // Security validation (LWA-only)
+            const credentialValidation = this.validateCredentials(credentials);
             if (!credentialValidation.isValid) {
                 AuditLogger_1.auditLogger.logCredentialUsage(nodeId, 'amazonSpApi', false, {
                     errors: credentialValidation.errors,
@@ -99,24 +96,8 @@ class SpApiRequest {
                 'x-amz-access-token': accessToken,
                 ...options.headers,
             };
-            // Conditionally sign request with AWS SigV4
-            let finalHeaders = headers;
-            if (useAwsSigning) {
-                try {
-                    const signedHeaders = await SigV4Signer_1.SigV4Signer.signRequest(options.method, url.toString(), headers, options.body ? JSON.stringify(options.body) : undefined, credentials);
-                    finalHeaders = { ...headers, ...signedHeaders };
-                    AuditLogger_1.auditLogger.logAuthentication(nodeId, 'AWS_SigV4', true, { endpoint: options.endpoint });
-                }
-                catch (error) {
-                    AuditLogger_1.auditLogger.logAuthentication(nodeId, 'AWS_SigV4', false, {
-                        endpoint: options.endpoint,
-                        error: error instanceof Error ? error.message : 'Unknown error'
-                    });
-                    throw new n8n_workflow_1.NodeOperationError(executeFunctions.getNode(), `AWS SigV4 signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-                        description: 'Check your AWS credentials or disable AWS signing in advanced options'
-                    });
-                }
-            }
+            // AWS SigV4 signing disabled: enforce LWA-only authentication
+            const finalHeaders = headers;
             // Configure axios request based on response type
             const axiosConfig = {
                 method: options.method,
@@ -154,7 +135,6 @@ class SpApiRequest {
                     status: response.status,
                     duration,
                     method: options.method,
-                    useAwsSigning,
                 });
                 MetricsCollector_1.metricsCollector.recordApiRequest(options.endpoint, duration, false, `HTTP_${response.status}`);
                 throw await ErrorHandler_1.ErrorHandler.handleApiError(response);
@@ -164,7 +144,6 @@ class SpApiRequest {
                 status: response.status,
                 duration,
                 method: options.method,
-                useAwsSigning,
             });
             MetricsCollector_1.metricsCollector.recordApiRequest(options.endpoint, duration, true);
             return {
@@ -194,12 +173,7 @@ class SpApiRequest {
             throw new n8n_workflow_1.NodeOperationError(executeFunctions.getNode(), `Unexpected error: ${errorMessage}`);
         }
     }
-    static shouldUseAwsSigning(credentials) {
-        // Only enable AWS signing if explicitly requested
-        const advancedOptions = credentials.advancedOptions;
-        return Boolean(advancedOptions?.useAwsSigning);
-    }
-    static validateCredentials(credentials, useAwsSigning) {
+    static validateCredentials(credentials) {
         const errors = [];
         // Always validate LWA credentials
         if (!credentials.lwaClientId) {
@@ -210,18 +184,6 @@ class SpApiRequest {
         }
         if (!credentials.lwaRefreshToken) {
             errors.push('LWA Refresh Token is required');
-        }
-        // Validate AWS credentials only if AWS signing is enabled
-        if (useAwsSigning) {
-            const advancedOptions = credentials.advancedOptions;
-            const awsAccessKeyId = credentials.awsAccessKeyId || advancedOptions?.awsAccessKeyId;
-            const awsSecretAccessKey = credentials.awsSecretAccessKey || advancedOptions?.awsSecretAccessKey;
-            if (!awsAccessKeyId) {
-                errors.push('AWS Access Key ID is required when AWS signing is enabled');
-            }
-            if (!awsSecretAccessKey) {
-                errors.push('AWS Secret Access Key is required when AWS signing is enabled');
-            }
         }
         return {
             isValid: errors.length === 0,

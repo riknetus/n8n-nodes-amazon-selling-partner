@@ -1,6 +1,5 @@
 import {
 	IAuthenticateGeneric,
-	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
 } from 'n8n-workflow';
@@ -210,11 +209,7 @@ export class AmazonSpApi implements ICredentialType {
 		properties: {},
 	};
 
-	test: ICredentialTestRequest = {
-		request: {
-			baseURL: '={{$credentials.spApiEndpoint || $self["getSpApiEndpoint"]($credentials.awsRegion, $credentials.environment)}}',
-			url: '/sellers/v1/marketplaceParticipations',
-			method: 'GET',
-		},
-	};
+	// Note: Credential testing is handled by the node itself during actual API calls
+	// because SP-API requires LWA token authentication which isn't suitable for
+	// simple credential test requests
 } 
