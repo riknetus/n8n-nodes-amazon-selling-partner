@@ -98,6 +98,16 @@ class SpApiRequest {
             };
             // AWS SigV4 signing disabled: enforce LWA-only authentication
             const finalHeaders = headers;
+            // Log request details for debugging
+            console.log('SP-API Request:', {
+                method: options.method,
+                url: url.toString(),
+                endpoint: options.endpoint,
+                baseUrl,
+                hasAccessToken: !!accessToken,
+                region: credentials.awsRegion,
+                marketplace: credentials.primaryMarketplace,
+            });
             // Configure axios request based on response type
             const axiosConfig = {
                 method: options.method,
@@ -125,10 +135,13 @@ class SpApiRequest {
                 console.error('SP-API Request Failed:', {
                     status: response.status,
                     statusText: response.statusText,
+                    url: url.toString(),
                     endpoint: options.endpoint,
                     method: options.method,
+                    baseUrl,
                     responseData: response.data,
-                    headers: response.headers,
+                    requestHeaders: headers,
+                    responseHeaders: response.headers,
                 });
                 // Log failed API access
                 AuditLogger_1.auditLogger.logApiAccess(nodeId, options.endpoint, false, {
