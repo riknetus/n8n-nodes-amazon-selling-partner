@@ -228,20 +228,31 @@ describe('Analytics Operations', () => {
 				.toThrow('Invalid date range: Date range cannot exceed 30 days');
 		});
 
-		it('should require at least one metric', async () => {
-			mockExecuteFunctions.getNodeParameter
-				.mockImplementation((paramName: string) => {
-					if (paramName === 'metricsSelection') {
-						return {
-							trafficMetrics: { metrics: [] },
-							salesMetrics: { metrics: [] },
-							conversionMetrics: { metrics: [] },
-							buyboxMetrics: { metrics: [] },
-							computedMetrics: { metrics: [] },
-						};
-					}
-					return mockExecuteFunctions.getNodeParameter(paramName, 0);
-				});
+        it('should require at least one metric', async () => {
+            (mockExecuteFunctions.getNodeParameter as jest.Mock)
+                .mockImplementation((paramName: string, _index?: number, defaultValue?: any) => {
+                    const baseParams: Record<string, any> = {
+                        marketplaceIds: ['ATVPDKIKX0DER'],
+                        dateRangeType: 'relative',
+                        datePreset: 'last7days',
+                        granularity: 'DAILY',
+                        timezone: 'UTC',
+                        filters: {},
+                        sortingLimiting: {},
+                        outputOptions: {},
+                        advancedOptions: { analyticsMode: 'dataKiosk' },
+                    };
+                    if (paramName === 'metricsSelection') {
+                        return {
+                            trafficMetrics: { metrics: [] },
+                            salesMetrics: { metrics: [] },
+                            conversionMetrics: { metrics: [] },
+                            buyboxMetrics: { metrics: [] },
+                            computedMetrics: { metrics: [] },
+                        };
+                    }
+                    return baseParams[paramName] ?? defaultValue;
+                });
 
 			await expect(executeAnalyticsOperation.call(mockExecuteFunctions, 'salesAndTrafficByAsin', 0))
 				.rejects

@@ -2,10 +2,7 @@
 
 ## Overview
 
-This guide explains the simplified credential structure for the Amazon Selling Partner API node. You now have two options for authentication:
-
-1. **LWA-Only Authentication** (Recommended) - Simple setup with just Login with Amazon credentials
-2. **LWA + AWS SigV4 Authentication** - Advanced setup for specific use cases
+This guide explains the simplified credential structure for the Amazon Selling Partner API node. Authentication is via **LWA-Only**.
 
 ## 🚨 Critical: Marketplace Selection
 
@@ -38,7 +35,7 @@ If you're selling on Amazon India (amazon.in):
 ❌ **Wrong**: Using `us-east-1` for India  
 ✅ **Correct**: Using `eu-west-1` for India
 
-## Option 1: LWA-Only Authentication (Recommended)
+## LWA-Only Authentication (Required)
 
 ### When to Use
 - Most SP-API operations including Orders, Products, Inventory
@@ -68,116 +65,6 @@ If you're selling on Amazon India (amazon.in):
    - **AWS Region**: Select the matching region (e.g., Europe for India)
    - Add your LWA credentials
 
-## Option 2: LWA + AWS SigV4 Authentication
-
-### When to Use
-- Your application specifically requires AWS SigV4 signing
-- Certain advanced SP-API operations that mandate AWS signing
-- Enhanced security requirements
-
-### Required Credentials
-```json
-{
-  "environment": "production",
-  "primaryMarketplace": "A21TJRUUN4KGV",
-  "awsRegion": "eu-west-1",
-  "lwaClientId": "amzn1.application-oa2-client.your-client-id",
-  "lwaClientSecret": "amzn1.application-oa2-client.secret.your-client-secret",
-  "lwaRefreshToken": "Atzr|IwEBIH...your-refresh-token",
-  "advancedOptions": {
-    "awsAccessKeyId": "AKIAIOSFODNN7EXAMPLE",
-    "awsSecretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    "useAwsSigning": true
-  }
-}
-```
-
-### Setup Steps
-1. Complete all LWA setup steps from Option 1
-2. Create AWS IAM user with SP-API permissions
-3. Generate AWS Access Key and Secret
-4. In n8n credentials, expand "Advanced Options"
-5. Add AWS credentials and enable "Use AWS SigV4 Signing"
-
-### Creating AWS Credentials (Step-by-Step)
-
-**Note**: AWS credentials are only required if you explicitly enable AWS SigV4 signing in Advanced Options. Most SP-API operations work with LWA-only authentication.
-
-If you need AWS SigV4 signing, follow these steps to create the AWS keys:
-
-1. **Pick the AWS account** that owns your SP-API application (Seller Central access is not required for the IAM user).
-2. **Create an IAM user**
-   - Console path: `IAM → Users → Create user`
-   - User name: e.g. `spapi-n8n`
-   - Permissions: choose **Attach policies directly**, click **Create policy**, switch to the **JSON** tab, and paste one of the policies shown below. Save the policy, then select it for the user.
-3. **Generate access keys**
-   - After the user is created, open it (`IAM → Users → spapi-n8n → Security credentials`).
-   - Click **Create access key** → choose *Application running outside AWS* → acknowledge, then download the `.csv` or copy the values. You only see the secret key once.
-4. **Harden if needed**
-   - Restrict the policy to only the SP-API regions you call (NA `us-east-1`, EU `eu-west-1`, FE `us-west-2`).
-   - Rotate keys periodically and monitor with CloudTrail.
-   - Optional: create an IAM role with the same policy and allow the user `sts:AssumeRole`. The n8n node already signs requests directly with the user keys, so using the role is optional.
-5. **Paste the keys into n8n**
-   - Open your **Amazon Selling Partner API** credential.
-   - Expand **Advanced Options**, add the Access Key ID and Secret Access Key, and enable **Use AWS SigV4 Signing**.
-   - Save the credential.
-
-#### IAM policies
-
-Minimal broad policy (allows invocation everywhere—tighten later):
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "InvokeSpApi",
-      "Effect": "Allow",
-      "Action": "execute-api:Invoke",
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-Region-scoped variant (restrict to SP-API regions you use):
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "InvokeSpApiRegions",
-      "Effect": "Allow",
-      "Action": "execute-api:Invoke",
-      "Resource": [
-        "arn:aws:execute-api:us-east-1:*:*/*/*/*",
-        "arn:aws:execute-api:eu-west-1:*:*/*/*/*",
-        "arn:aws:execute-api:us-west-2:*:*/*/*/*"
-      ]
-    }
-  ]
-}
-```
-
-#### Optional AWS CLI workflow (PowerShell)
-
-```powershell
-# Create user
-aws iam create-user --user-name spapi-n8n
-
-# Create policy from local file policy.json (use one of the JSON snippets above)
-aws iam create-policy --policy-name SPAPIInvoke --policy-document file://policy.json
-
-# Attach policy to the user
-$ACCOUNT_ID=(aws sts get-caller-identity --query Account --output text)
-aws iam attach-user-policy --user-name spapi-n8n --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/SPAPIInvoke
-
-# Create access key (store the secret securely)
-aws iam create-access-key --user-name spapi-n8n
-```
-
-Use the Access Key ID and Secret Access Key from the console download or the CLI output when you update the n8n credential.
 
 ## Migration from Previous Version
 
@@ -222,10 +109,7 @@ Correct Configuration:
 ```
 
 ### "AWS credentials are required" Error
-This means AWS signing is enabled but credentials are missing:
-- Check if "Use AWS SigV4 Signing" is enabled in Advanced Options
-- If not needed, disable AWS signing
-- If needed, add valid AWS credentials
+Not applicable. AWS IAM signing is not used in this node.
 
 ### "LWA authentication failed" Error
 This is related to Login with Amazon credentials:
