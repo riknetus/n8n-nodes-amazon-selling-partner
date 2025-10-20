@@ -25,16 +25,43 @@ export class ErrorHandler {
 			);
 		}
 
-		// Handle authentication errors (401, 403)
-		if (status === 401 || status === 403) {
-			return new NodeOperationError(
-				{} as any,
-				'Authentication failed',
-				{
-					description: 'Check your SP-API credentials, LWA tokens, and AWS permissions. Ensure your application has the required roles.',
-				}
-			);
+	// Handle authentication errors (401, 403)
+	if (status === 401 || status === 403) {
+		// Extract detailed error information
+		let errorDetails = '';
+		let errorCode = '';
+		
+		if (data && data.errors && Array.isArray(data.errors)) {
+			const errors = data.errors as SpApiError[];
+			errorCode = errors[0]?.code || 'Unauthorized';
+			errorDetails = errors.map(err => `${err.code}: ${err.message}`).join('\n');
 		}
+		
+		// Log full error for debugging
+		console.error('SP-API Auth Error:', JSON.stringify({
+			status,
+			errorCode,
+			errors: data?.errors,
+			headers: {
+				'x-amzn-requestid': headers['x-amzn-requestid'],
+				'x-amzn-errortype': headers['x-amzn-errortype'],
+			}
+		}, null, 2));
+		
+		return new NodeOperationError(
+			{} as any,
+			`Authentication failed (${status}): ${errorCode}`,
+			{
+				description: `${errorDetails || 'Access to requested resource is denied.'}\n\n` +
+					`Troubleshooting:\n` +
+					`• Verify your Primary Marketplace matches your app authorization (e.g., India = eu-west-1)\n` +
+					`• Check AWS Region matches your marketplace\n` +
+					`• Ensure LWA credentials are correct and refresh token is valid\n` +
+					`• Verify your app has required SP-API roles in Developer Console\n\n` +
+					`Request ID: ${headers['x-amzn-requestid'] || 'N/A'}`,
+			}
+		);
+	}
 
 		// Handle not found (404)
 		if (status === 404) {

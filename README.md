@@ -12,7 +12,9 @@ A production-grade n8n custom node for Amazon Selling Partner API with comprehen
 - **Shipments Management**: Track and manage shipment operations and details
 - **Product Listings**: Manage product catalog and inventory operations
 - **Invoices & Reports**: Generate and retrieve invoices and financial reports
-- **Simplified Authentication**: LWA (Login with Amazon) credentials only - AWS credentials optional
+- **Reports (Sales & Returns)**: Pull Sales & Traffic business reports, FBA/MFN returns, refunds, and a consolidated sales vs returns view by ASIN/SKU
+- **Data Kiosk (GraphQL)**: Submit GraphQL queries to `/dataKiosk/2023-11-15`, poll status, and download results
+- **Simplified Authentication**: LWA (Login with Amazon) only. AWS IAM is not used.
 - **Multi-Marketplace Support**: Support for all Amazon marketplaces globally
 - **Automatic Pagination**: Handle large result sets seamlessly
 
@@ -67,19 +69,59 @@ For most use cases, you only need LWA credentials:
    - **LWA Client Secret**: From your SP-API application  
    - **LWA Refresh Token**: Generated during authorization
 
-#### Advanced Setup (Optional AWS Signing)
-If your application requires AWS SigV4 signing:
+#### Authentication
+This node authenticates with SP-API via Login with Amazon (LWA) only. AWS IAM SigV4 signing has been intentionally disabled to reduce setup friction in n8n. For endpoints requiring Restricted Data Tokens (PII), the node automatically exchanges the LWA token for an RDT.
 
-1. Create AWS IAM user with SP-API permissions
-2. In the credential configuration, expand **Advanced Options**
-3. Add your AWS credentials:
-   - **AWS Access Key ID**: From your IAM user
-   - **AWS Secret Access Key**: From your IAM user
-   - **Use AWS SigV4 Signing**: Enable this option
-   - **AWS Role ARN**: (Optional) For enhanced security
-   - **SP-API Endpoint Override**: (Optional) Custom endpoint
+### 3. Grant Required SP-API Roles
 
-> **Note**: Most SP-API operations work with LWA-only authentication. AWS credentials are only needed for specific advanced operations or if your application configuration requires it.
+- **Reports API** – needed for the Sales & Traffic report fallback (`GET_SALES_AND_TRAFFIC_REPORT`).
+- **Selling Partner Insights / Data Kiosk** – needed for the Data Kiosk analytics endpoints.
+
+Ensure these roles are assigned to your app in Developer Central *and* authorized by the seller account. After adding roles, restart the authorization flow to obtain a refresh token that carries the new scopes.
+
+### 4. Smoke test before complex operations
+
+Create a workflow with the Amazon Selling Partner node:
+
+1. Resource `sellers`, operation `getMarketplaceParticipations`.
+2. Execute the node.
+   - **200 OK** → credentials are correct.
+   - **401 Unauthorized** → LWA credentials invalid/refresh token expired.
+   - **403 Forbidden** → seller hasn’t authorized the required role or the app lacks it.
+
+### 5. Data Kiosk (GraphQL)
+
+Use the `Data Kiosk` resource to run GraphQL queries:
+
+1. Operation `Run Query and Download`
+2. Provide your GraphQL `query` using the **correct versioned schema** (see guide below)
+3. The node will create the query, poll until `DONE`, then download the document (handles pagination when present)
+
+**Important:** DataKiosk requires **versioned domain fields**. Example:
+```graphql
+query {
+  analytics_salesAndTraffic_2024_04_24 {
+    salesAndTrafficTrends(
+      asinAggregation: CHILD
+      dateAggregation: DAY
+      startDate: "2024-01-01"
+      endDate: "2024-01-07"
+      filters: { asins: [], marketplaceId: "ATVPDKIKX0DER" }
+    ) {
+      traffic { pageViews sessions }
+      sales { unitsOrdered orderedProductSales { amount currencyCode } }
+    }
+  }
+}
+```
+
+📖 **See [DATA_KIOSK_GUIDE.md](./DATA_KIOSK_GUIDE.md) for complete documentation, examples, and query structure.**
+
+Grant the "Selling Partner Insights / Data Kiosk" role in Developer Central. If you lack this role, use the `Reports` resource instead.
+
+### 6. Refreshing LWA credentials
+
+Still getting LWA errors after signing? Rotate the LWA client secret, re-authorize the seller, and paste the new refresh token into n8n.
 
 ## Usage
 
@@ -198,6 +240,57 @@ If your application requires AWS SigV4 signing:
     "maxResultsPerPage": 100,
     "returnAll": true
   }
+}
+```
+
+### Reports: Sales & Traffic by ASIN
+```json
+{
+  "resource": "reports",
+  "operation": "salesTrafficByAsin",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z",
+  "granularity": "DAILY",
+  "aggregationLevel": "CHILD",
+  "includeSessions": true
+}
+```
+
+### Reports: Returns (FBA/MFN) by ASIN
+```json
+{
+  "resource": "reports",
+  "operation": "returnsByAsinFba",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z",
+  "granularity": "DAILY"
+}
+```
+
+### Reports: Consolidated Sales & Returns
+```json
+{
+  "resource": "reports",
+  "operation": "consolidatedSalesAndReturnsByAsin",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z",
+  "granularity": "DAILY",
+  "includeRefunds": false,
+  "emitRawSubdatasets": false
+}
+```
+
+### Reports: Refund Totals by Marketplace
+```json
+{
+  "resource": "reports",
+  "operation": "refundsByAsin",
+  "marketplaceIds": ["ATVPDKIKX0DER"],
+  "dateFrom": "2024-08-01T00:00:00Z",
+  "dateTo": "2024-08-07T23:59:59Z"
 }
 ```
 

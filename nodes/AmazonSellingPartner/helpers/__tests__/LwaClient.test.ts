@@ -88,14 +88,10 @@ describe('LwaClient', () => {
 
 			await LwaClient.getAccessToken(mockCredentials);
 
+			// Verify the request was made with form-urlencoded data
 			expect(mockedAxios.post).toHaveBeenCalledWith(
 				'https://api.amazon.com/auth/o2/token',
-				{
-					grant_type: 'refresh_token',
-					refresh_token: 'test-refresh-token',
-					client_id: 'test-client-id',
-					client_secret: 'test-client-secret',
-				},
+				'grant_type=refresh_token&refresh_token=test-refresh-token&client_id=test-client-id&client_secret=test-client-secret',
 				{
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded',

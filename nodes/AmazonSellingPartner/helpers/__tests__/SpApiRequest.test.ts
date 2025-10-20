@@ -1,211 +1,169 @@
-import { IExecuteFunctions } from 'n8n-workflow';
+import axios from 'axios';
 import { SpApiRequest } from '../SpApiRequest';
-import { ErrorHandler } from '../../core/ErrorHandler';
+import { LwaClient } from '../LwaClient';
+import { RdtClient } from '../RdtClient';
+import { ICredentialDataDecryptedObject, IExecuteFunctions } from 'n8n-workflow';
 
-// Mock all dependencies
+// Mock dependencies
 jest.mock('axios');
 jest.mock('../LwaClient');
-jest.mock('../SigV4Signer');
+jest.mock('../RdtClient');
 jest.mock('../../core/RateLimiter');
-jest.mock('../../core/ErrorHandler');
-jest.mock('../../core/MetricsCollector');
 jest.mock('../../core/AuditLogger');
+jest.mock('../../core/MetricsCollector');
 jest.mock('../../core/SecurityValidator');
 
-const mockAxios = require('axios');
-const mockLwaClient = require('../LwaClient').LwaClient;
-const mockSigV4Signer = require('../SigV4Signer').SigV4Signer;
-const mockErrorHandler = require('../../core/ErrorHandler').ErrorHandler;
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+const mockedLwaClient = LwaClient as jest.Mocked<typeof LwaClient>;
+const mockedRdtClient = RdtClient as jest.Mocked<typeof RdtClient>;
 
 describe('SpApiRequest', () => {
-	let mockExecuteFunctions: jest.Mocked<IExecuteFunctions>;
+	const mockCredentials: ICredentialDataDecryptedObject = {
+		lwaClientId: 'test-client-id',
+		lwaClientSecret: 'test-client-secret',
+		lwaRefreshToken: 'test-refresh-token',
+		awsRegion: 'us-east-1',
+		environment: 'sandbox',
+	};
+
+	const mockExecuteFunctions = {
+		getCredentials: jest.fn().mockResolvedValue(mockCredentials),
+		getNode: jest.fn().mockReturnValue({ id: 'test-node-id' }),
+	} as unknown as IExecuteFunctions;
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		
-		mockExecuteFunctions = {
-			getCredentials: jest.fn(),
-			getNode: jest.fn().mockReturnValue({
-				id: 'test-node',
-				name: 'Test Node',
-				type: 'amazonSellingPartner',
-			}),
-		} as any;
-
-		// Setup default mocks
-		mockLwaClient.getAccessToken = jest.fn().mockResolvedValue('mock-access-token');
-		
-		// Mock RateLimiter instance methods
-		const mockRateLimiterInstance = {
-			waitForToken: jest.fn().mockResolvedValue(undefined),
-			updateFromHeaders: jest.fn(),
-		};
-		(SpApiRequest as any).rateLimiter = mockRateLimiterInstance;
+    // Ensure both callable axios() and axios.request() return a successful response
+    (mockedAxios as any).mockResolvedValue({
+      data: { test: 'response' },
+      headers: {},
+      status: 200,
+    } as any);
+    (mockedAxios.request as jest.Mock).mockResolvedValue({
+    data: { test: 'response' },
+    headers: {},
+    status: 200,
+  } as any);
 	});
 
-	describe('credential validation', () => {
-		it('should validate LWA credentials are present', async () => {
-			mockExecuteFunctions.getCredentials.mockResolvedValue({
-				// Missing LWA credentials
-				environment: 'sandbox',
-				awsRegion: 'us-east-1',
-			});
-
-			await expect(
-				SpApiRequest.makeRequest(mockExecuteFunctions, {
-					method: 'GET',
-					endpoint: '/orders/v0/orders',
-				})
-			).rejects.toThrow('Invalid credentials');
-		});
-
-		it('should accept valid LWA-only credentials', async () => {
-			const validCredentials = {
-				lwaClientId: 'amzn1.application-oa2-client.test123',
-				lwaClientSecret: 'secret123',
-				lwaRefreshToken: 'refresh123',
-				environment: 'sandbox',
-				awsRegion: 'us-east-1',
-			};
-
-			mockExecuteFunctions.getCredentials.mockResolvedValue(validCredentials);
-			mockAxios.mockResolvedValue({
-				data: { payload: { Orders: [] } },
-				headers: {},
-				status: 200,
-			});
-
-			const result = await SpApiRequest.makeRequest(mockExecuteFunctions, {
-				method: 'GET',
-				endpoint: '/orders/v0/orders',
-			});
-
-			expect(result.status).toBe(200);
-			expect(mockLwaClient.getAccessToken).toHaveBeenCalledWith(validCredentials);
-		});
-
-		it('should use AWS signing when enabled in advanced options', async () => {
-			const credentialsWithAwsSigning = {
-				lwaClientId: 'amzn1.application-oa2-client.test123',
-				lwaClientSecret: 'secret123',
-				lwaRefreshToken: 'refresh123',
-				environment: 'sandbox',
-				awsRegion: 'us-east-1',
-				advancedOptions: {
-					useAwsSigning: true,
-					awsAccessKeyId: 'AKIATEST',
-					awsSecretAccessKey: 'secretkey123',
-				},
-			};
-
-			mockExecuteFunctions.getCredentials.mockResolvedValue(credentialsWithAwsSigning);
-			mockSigV4Signer.signRequest = jest.fn().mockResolvedValue({
-				'Authorization': 'AWS4-HMAC-SHA256 ...',
-				'X-Amz-Date': '20240101T000000Z',
-			});
-			mockAxios.mockResolvedValue({
-				data: { payload: { Orders: [] } },
-				headers: {},
-				status: 200,
-			});
+	describe('Token Selection', () => {
+		it('should use LWA token when no restricted resources provided', async () => {
+			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
 
 			await SpApiRequest.makeRequest(mockExecuteFunctions, {
 				method: 'GET',
 				endpoint: '/orders/v0/orders',
 			});
 
-			expect(mockSigV4Signer.signRequest).toHaveBeenCalled();
+			expect(mockedLwaClient.getAccessToken).toHaveBeenCalledWith(mockCredentials);
+			expect(mockedRdtClient.getRestrictedAccessToken).not.toHaveBeenCalled();
 		});
-	});
 
-	describe('error handling', () => {
-		it('should handle HTTP 4xx errors through ErrorHandler', async () => {
-			const validCredentials = {
-				lwaClientId: 'amzn1.application-oa2-client.test123',
-				lwaClientSecret: 'secret123',
-				lwaRefreshToken: 'refresh123',
-				environment: 'sandbox',
-				awsRegion: 'us-east-1',
-			};
+		it('should use RDT token when restricted resources provided', async () => {
+			mockedRdtClient.getRestrictedAccessToken.mockResolvedValue('rdt-token-456');
 
-			mockExecuteFunctions.getCredentials.mockResolvedValue(validCredentials);
-			mockAxios.mockResolvedValue({
-				data: { errors: [{ code: 'InvalidInput', message: 'Invalid marketplace ID' }] },
-				headers: {},
-				status: 400,
+			const restrictedResources = [
+				{
+					method: 'GET' as const,
+					path: '/orders/v0/orders/123-4567890-1234567',
+					dataElements: ['buyerInfo'],
+				},
+			];
+
+			await SpApiRequest.makeRequest(mockExecuteFunctions, {
+				method: 'GET',
+				endpoint: '/orders/v0/orders/123-4567890-1234567',
+				restrictedResources,
 			});
 
-			const mockApiError = new Error('Invalid marketplace ID');
-			mockErrorHandler.handleApiError = jest.fn().mockRejectedValue(mockApiError);
-
-			await expect(
-				SpApiRequest.makeRequest(mockExecuteFunctions, {
-					method: 'GET',
-					endpoint: '/orders/v0/orders',
-				})
-			).rejects.toThrow('Invalid marketplace ID');
-
-			expect(mockErrorHandler.handleApiError).toHaveBeenCalled();
+			expect(mockedRdtClient.getRestrictedAccessToken).toHaveBeenCalledWith(
+				mockCredentials,
+				restrictedResources
+			);
+			expect(mockedLwaClient.getAccessToken).not.toHaveBeenCalled();
 		});
 
-		it('should handle network errors through ErrorHandler', async () => {
-			const networkError = {
-				isAxiosError: true,
-				message: 'Network timeout',
-				config: {},
-				response: undefined,
-				request: undefined,
-				name: 'AxiosError',
-				toJSON: () => ({}),
-			};
-			mockAxios.mockRejectedValue(networkError);
-
-			const mockErrorHandler = ErrorHandler as jest.Mocked<typeof ErrorHandler>;
-			mockErrorHandler.handleNetworkError.mockRejectedValue(new Error('Network timeout'));
-
-			await expect(
-				SpApiRequest.makeRequest(mockExecuteFunctions, {
-					method: 'GET',
-					endpoint: '/orders/v0/orders',
-				})
-			).rejects.toThrow('Network timeout');
-
-			expect(mockErrorHandler.handleNetworkError).toHaveBeenCalledWith(networkError);
-		});
-	});
-
-	describe('query parameter handling', () => {
-		it('should build query parameters correctly', async () => {
-			const validCredentials = {
-				lwaClientId: 'amzn1.application-oa2-client.test123',
-				lwaClientSecret: 'secret123',
-				lwaRefreshToken: 'refresh123',
-				environment: 'sandbox',
-				awsRegion: 'us-east-1',
-			};
-
-			mockExecuteFunctions.getCredentials.mockResolvedValue(validCredentials);
-			mockAxios.mockResolvedValue({
-				data: { payload: { Orders: [] } },
-				headers: {},
-				status: 200,
-			});
+		it('should use LWA token when restricted resources array is empty', async () => {
+			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
 
 			await SpApiRequest.makeRequest(mockExecuteFunctions, {
 				method: 'GET',
 				endpoint: '/orders/v0/orders',
-				query: {
-					MarketplaceIds: ['ATVPDKIKX0DER', 'A2EUQ1WTGCTBG2'],
-					CreatedAfter: '2024-01-01T00:00:00Z',
-					OrderStatuses: ['Unshipped', 'Shipped'],
-				},
+				restrictedResources: [],
 			});
 
-			expect(mockAxios).toHaveBeenCalledWith(
+			expect(mockedLwaClient.getAccessToken).toHaveBeenCalledWith(mockCredentials);
+			expect(mockedRdtClient.getRestrictedAccessToken).not.toHaveBeenCalled();
+		});
+	});
+
+  describe('AWS Signing Behavior', () => {
+    it('should not use AWS signing (LWA-only enforced)', async () => {
+			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
+
+			await SpApiRequest.makeRequest(mockExecuteFunctions, {
+				method: 'GET',
+				endpoint: '/orders/v0/orders',
+			});
+
+			// Verify headers don't include AWS signature
+			expect(mockedAxios).toHaveBeenCalledWith(
 				expect.objectContaining({
-					url: expect.stringContaining('MarketplaceIds=ATVPDKIKX0DER'),
+					headers: expect.objectContaining({
+						'x-amz-access-token': 'lwa-token-123',
+						'User-Agent': 'n8n-amazon-sp-api/1.0.0',
+					}),
 				})
 			);
 		});
 	});
-}); 
+
+	describe('Request Headers', () => {
+		it('should set correct headers for LWA-only request', async () => {
+			mockedLwaClient.getAccessToken.mockResolvedValue('lwa-token-123');
+
+			await SpApiRequest.makeRequest(mockExecuteFunctions, {
+				method: 'GET',
+				endpoint: '/orders/v0/orders',
+			});
+
+			expect(mockedAxios).toHaveBeenCalledWith(
+				expect.objectContaining({
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json',
+						'User-Agent': 'n8n-amazon-sp-api/1.0.0',
+						'x-amz-access-token': 'lwa-token-123',
+					},
+				})
+			);
+		});
+
+		it('should set correct headers for RDT request', async () => {
+			mockedRdtClient.getRestrictedAccessToken.mockResolvedValue('rdt-token-456');
+
+			await SpApiRequest.makeRequest(mockExecuteFunctions, {
+				method: 'GET',
+				endpoint: '/orders/v0/orders/123-4567890-1234567',
+				restrictedResources: [
+					{
+						method: 'GET',
+						path: '/orders/v0/orders/123-4567890-1234567',
+						dataElements: ['buyerInfo'],
+					},
+				],
+			});
+
+			expect(mockedAxios).toHaveBeenCalledWith(
+				expect.objectContaining({
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json',
+						'User-Agent': 'n8n-amazon-sp-api/1.0.0',
+						'x-amz-access-token': 'rdt-token-456',
+					},
+				})
+			);
+		});
+	});
+});

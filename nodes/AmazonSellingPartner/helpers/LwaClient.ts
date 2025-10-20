@@ -41,14 +41,17 @@ export class LwaClient {
 
 	private static async fetchAccessToken(credentials: ICredentialDataDecryptedObject): Promise<LwaTokenResponse> {
 		try {
+			// Construct form-urlencoded data
+			const formData = new URLSearchParams({
+				grant_type: 'refresh_token',
+				refresh_token: credentials.lwaRefreshToken as string,
+				client_id: credentials.lwaClientId as string,
+				client_secret: credentials.lwaClientSecret as string,
+			});
+
 			const response: AxiosResponse<LwaTokenResponse> = await axios.post(
 				this.TOKEN_ENDPOINT,
-				{
-					grant_type: 'refresh_token',
-					refresh_token: credentials.lwaRefreshToken,
-					client_id: credentials.lwaClientId,
-					client_secret: credentials.lwaClientSecret,
-				},
+				formData.toString(),
 				{
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded',
@@ -60,17 +63,29 @@ export class LwaClient {
 
 			return response.data;
 		} catch (error) {
-			if (axios.isAxiosError(error) && error.response) {
+            if (axios.isAxiosError(error) && error.response) {
 				const { status, data } = error.response;
+				// Log detailed error info for debugging
+                if (!process.env.JEST_SILENT_LOGS) {
+                    console.error('LWA Token Request Failed:', {
+                        status,
+                        data,
+                        requestUrl: this.TOKEN_ENDPOINT,
+                        clientId: credentials.lwaClientId,
+                    });
+                }
 				throw new NodeOperationError(
 					{} as any,
-					`LWA authentication failed (${status}): ${data.error_description || data.error || 'Unknown error'}`,
+					`LWA authentication failed (${status}): ${data.error_description || data.error || JSON.stringify(data)}`,
 					{
-						description: 'Check your LWA credentials and ensure they are valid and not expired',
+						description: 'Check your LWA credentials and ensure they are valid and not expired. See server logs for details.',
 					}
 				);
 			}
 			const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            if (!process.env.JEST_SILENT_LOGS) {
+                console.error('LWA Token Request Error (non-HTTP):', errorMessage);
+            }
 			throw new NodeOperationError({} as any, `LWA request failed: ${errorMessage}`);
 		}
 	}

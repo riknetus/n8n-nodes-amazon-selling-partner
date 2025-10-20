@@ -16,7 +16,7 @@ export const listingsOperations: INodeProperties[] = [
 				name: 'List ASINs',
 				value: 'listAsins',
 				description: 'List all ASINs published in specified marketplaces',
-				action: 'List ASINs',
+				action: 'List asi ns',
 			},
 			{
 				name: 'Get Listing Details',
@@ -114,7 +114,7 @@ export const listingsFields: INodeProperties[] = [
 				name: 'returnAll',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to return all results by automatically handling pagination',
+				description: 'Whether to return all results or only up to a given limit',
 			},
 			{
 				displayName: 'Max Results Limit',

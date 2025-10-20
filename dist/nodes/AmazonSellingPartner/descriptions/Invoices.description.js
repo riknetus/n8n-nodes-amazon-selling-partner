@@ -292,7 +292,7 @@ exports.invoicesFields = [
         default: {},
         options: [
             {
-                displayName: 'Max Poll Time (minutes)',
+                displayName: 'Max Poll Time (Minutes)',
                 name: 'maxPollTimeMinutes',
                 type: 'number',
                 default: 10,
@@ -303,7 +303,7 @@ exports.invoicesFields = [
                 },
             },
             {
-                displayName: 'Poll Interval (seconds)',
+                displayName: 'Poll Interval (Seconds)',
                 name: 'pollIntervalSeconds',
                 type: 'number',
                 default: 30,

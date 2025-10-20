@@ -23,7 +23,7 @@ async function runAllLoadTests() {
 		// Run Endurance Test (optional - takes 5 minutes)
 		if (process.argv.includes('--endurance')) {
 			console.log('Running Endurance Test...');
-			const enduranceTest = await runner.runLoadTest(createEnduranceTest());
+			await runner.runLoadTest(createEnduranceTest());
 		}
 
 		console.log('✅ All load tests completed successfully!');

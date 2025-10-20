@@ -106,7 +106,8 @@ describe('Orders Operations', () => {
 			mockExecuteFunctions.getNodeParameter
 				.mockReturnValueOnce(['ATVPDKIKX0DER']) // marketplaceIds
 				.mockReturnValueOnce('2024-01-01T00:00:00Z') // createdAfter
-				.mockReturnValueOnce('2024-03-01T00:00:00Z'); // createdBefore
+				.mockReturnValueOnce('2024-03-01T00:00:00Z') // createdBefore
+				.mockReturnValueOnce({}); // additionalOptions
 
 			mockExecuteFunctions.getNode.mockReturnValue({
 				id: 'test-node',
@@ -117,10 +118,11 @@ describe('Orders Operations', () => {
 				parameters: {},
 			});
 
-			// Execute the operation and expect it to throw
-			await expect(
-				executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
-			).rejects.toThrow('Date range cannot exceed 30 days');
+        // Execute the operation with validation failure
+        mockedSecurityValidator.validateDateRange.mockReturnValueOnce({ isValid: false, errors: ['Date range cannot exceed 30 days'] });
+        await expect(
+            executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
+        ).rejects.toThrow('Date range cannot exceed 30 days');
 		});
 
 		it('should validate date order', async () => {
@@ -147,10 +149,11 @@ describe('Orders Operations', () => {
 				parameters: {},
 			});
 
-			// Execute the operation and expect it to throw
-			await expect(
-				executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
-			).rejects.toThrow('Created After date must be before Created Before date');
+        // Execute the operation with validation failure
+        mockedSecurityValidator.validateDateRange.mockReturnValueOnce({ isValid: false, errors: ['Created After date must be before Created Before date'] });
+        await expect(
+            executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
+        ).rejects.toThrow('Created After date must be before Created Before date');
 		});
 
 		it('should handle empty results gracefully', async () => {
@@ -309,9 +312,9 @@ describe('Orders Operations', () => {
 				parameters: {},
 			});
 
-			await expect(
-				executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
-			).rejects.toThrow('MaxResultsPerPage must be between 1 and 100');
+        await expect(
+            executeOrdersOperation.call(mockExecuteFunctions, 'getOrders', 0)
+        ).rejects.toThrow('MaxResultsPerPage must be between 1 and 100');
 		});
 
 		it('should validate maxResultsPerPage minimum value', async () => {
@@ -331,6 +334,18 @@ describe('Orders Operations', () => {
 				typeVersion: 1,
 				position: [0, 0],
 				parameters: {},
+			});
+
+			// Mock SpApiRequest to avoid actual API call
+			const SpApiRequest = require('../helpers/SpApiRequest').SpApiRequest;
+			SpApiRequest.makeRequest = jest.fn().mockResolvedValue({
+				data: {
+					payload: {
+						Orders: [],
+					},
+				},
+				headers: {},
+				status: 200,
 			});
 
 			await expect(

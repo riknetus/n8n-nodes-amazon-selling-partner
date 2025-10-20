@@ -51,7 +51,7 @@ export class RateLimiter {
 		activeGroups: 0,
 	};
 
-	constructor(options: {
+    constructor(options: {
 		queueTimeout?: number;
 		distributedBackend?: DistributedBackend;
 	} = {}) {
@@ -59,7 +59,7 @@ export class RateLimiter {
 		this.distributedBackend = options.distributedBackend;
 		
 		// Start metrics collection
-		this.startMetricsCollection();
+        this.startMetricsCollection();
 	}
 
 	async waitForToken(groupKey: string, retryCount = 0): Promise<void> {
@@ -316,35 +316,46 @@ export class RateLimiter {
 		Object.assign(this.metrics, updates);
 	}
 
-	private startMetricsCollection(): void {
-		// Export metrics every 30 seconds
-		setInterval(() => {
-			const metrics = this.getMetrics();
-			
-			// Record metrics for monitoring
-			metricsCollector.recordMetric('rate_limiter_queue_length', metrics.queueLength);
-			metricsCollector.recordMetric('rate_limiter_active_groups', metrics.activeGroups);
-			
-			// Record per-group metrics
-			for (const [groupKey, details] of Object.entries(metrics.groupDetails)) {
-				metricsCollector.recordMetric('rate_limiter_group_queue_length', details.queueLength, { group: groupKey });
-				metricsCollector.recordMetric('rate_limiter_group_tokens', details.tokens, { group: groupKey });
-			}
-		}, 30000);
-	}
+    private startMetricsCollection(): void {
+        // Export metrics every 30 seconds. In test environments, unref the timer to avoid keeping the process alive.
+        const timer = setInterval(() => {
+            const metrics = this.getMetrics();
+            
+            // Record metrics for monitoring
+            metricsCollector.recordMetric('rate_limiter_queue_length', metrics.queueLength);
+            metricsCollector.recordMetric('rate_limiter_active_groups', metrics.activeGroups);
+            
+            // Record per-group metrics
+            for (const [groupKey, details] of Object.entries(metrics.groupDetails)) {
+                metricsCollector.recordMetric('rate_limiter_group_queue_length', details.queueLength, { group: groupKey });
+                metricsCollector.recordMetric('rate_limiter_group_tokens', details.tokens, { group: groupKey });
+            }
+        }, 30000);
+        if (typeof (timer as any).unref === 'function') {
+            (timer as any).unref();
+        }
+    }
 
 	// Cleanup method for graceful shutdown
-	cleanup(): void {
-		for (const rateLimit of this.limits.values()) {
-			if (rateLimit.processingInterval) {
-				clearInterval(rateLimit.processingInterval);
-			}
-			
-			// Reject all queued requests
-			rateLimit.requestQueue.forEach(item => {
-				item.reject(new Error('Rate limiter shutting down'));
-			});
-		}
-		this.limits.clear();
-	}
+    cleanup(): void {
+        for (const rateLimit of this.limits.values()) {
+            if (rateLimit.processingInterval) {
+                clearInterval(rateLimit.processingInterval);
+                rateLimit.processingInterval = undefined;
+            }
+            
+            // Safely reject all queued requests on next tick to avoid interfering with current call stack
+            const queued = [...rateLimit.requestQueue];
+            rateLimit.requestQueue.length = 0;
+            this.updateQueueMetrics();
+            process.nextTick(() => {
+                for (const item of queued) {
+                    try {
+                        item.reject(new Error('Rate limiter shutting down'));
+                    } catch {}
+                }
+            });
+        }
+        this.limits.clear();
+    }
 } 

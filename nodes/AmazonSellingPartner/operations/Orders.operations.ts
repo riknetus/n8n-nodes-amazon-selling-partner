@@ -231,7 +231,7 @@ export async function executeOrdersOperation(
 			queryParams.PaymentMethods = additionalOptions.paymentMethods;
 		}
 
-		if (additionalOptions.maxResultsPerPage) {
+		if (additionalOptions.maxResultsPerPage !== undefined && additionalOptions.maxResultsPerPage !== null) {
 			const maxResults = additionalOptions.maxResultsPerPage;
 			if (maxResults < 1 || maxResults > 100) {
 				throw new NodeOperationError(this.getNode(), 'MaxResultsPerPage must be between 1 and 100');

@@ -171,7 +171,7 @@ exports.ordersFields = [
                 name: 'returnAll',
                 type: 'boolean',
                 default: true,
-                description: 'Whether to return all results by automatically handling pagination',
+                description: 'Whether to return all results or only up to a given limit',
             },
         ],
     },
@@ -202,6 +202,6 @@ exports.ordersFields = [
                 operation: ['getOrderItems'],
             },
         },
-        description: 'Whether to return all order items by automatically handling pagination',
+        description: 'Whether to return all results or only up to a given limit',
     },
 ];

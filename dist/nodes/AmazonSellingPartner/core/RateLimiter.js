@@ -243,8 +243,8 @@ class RateLimiter {
         Object.assign(this.metrics, updates);
     }
     startMetricsCollection() {
-        // Export metrics every 30 seconds
-        setInterval(() => {
+        // Export metrics every 30 seconds. In test environments, unref the timer to avoid keeping the process alive.
+        const timer = setInterval(() => {
             const metrics = this.getMetrics();
             // Record metrics for monitoring
             MetricsCollector_1.metricsCollector.recordMetric('rate_limiter_queue_length', metrics.queueLength);
@@ -255,16 +255,28 @@ class RateLimiter {
                 MetricsCollector_1.metricsCollector.recordMetric('rate_limiter_group_tokens', details.tokens, { group: groupKey });
             }
         }, 30000);
+        if (typeof timer.unref === 'function') {
+            timer.unref();
+        }
     }
     // Cleanup method for graceful shutdown
     cleanup() {
         for (const rateLimit of this.limits.values()) {
             if (rateLimit.processingInterval) {
                 clearInterval(rateLimit.processingInterval);
+                rateLimit.processingInterval = undefined;
             }
-            // Reject all queued requests
-            rateLimit.requestQueue.forEach(item => {
-                item.reject(new Error('Rate limiter shutting down'));
+            // Safely reject all queued requests on next tick to avoid interfering with current call stack
+            const queued = [...rateLimit.requestQueue];
+            rateLimit.requestQueue.length = 0;
+            this.updateQueueMetrics();
+            process.nextTick(() => {
+                for (const item of queued) {
+                    try {
+                        item.reject(new Error('Rate limiter shutting down'));
+                    }
+                    catch { }
+                }
             });
         }
         this.limits.clear();

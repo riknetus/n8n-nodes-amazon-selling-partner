@@ -38,7 +38,7 @@ async function executeOrdersOperation(operation, itemIndex) {
         if (additionalOptions.paymentMethods?.length > 0) {
             queryParams.PaymentMethods = additionalOptions.paymentMethods;
         }
-        if (additionalOptions.maxResultsPerPage) {
+        if (additionalOptions.maxResultsPerPage !== undefined && additionalOptions.maxResultsPerPage !== null) {
             const maxResults = additionalOptions.maxResultsPerPage;
             if (maxResults < 1 || maxResults > 100) {
                 throw new n8n_workflow_1.NodeOperationError(this.getNode(), 'MaxResultsPerPage must be between 1 and 100');

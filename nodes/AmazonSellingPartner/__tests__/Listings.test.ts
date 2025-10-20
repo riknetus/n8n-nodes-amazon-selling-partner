@@ -151,6 +151,8 @@ describe('Listings Operations', () => {
 				],
 				nextToken: undefined,
 			},
+			headers: {},
+			status: 200,
 		};
 
 		beforeEach(() => {
@@ -218,12 +220,16 @@ describe('Listings Operations', () => {
 					listings: [mockListingResponse.data.listings[0]],
 					nextToken: 'next-page-token',
 				},
+				headers: {},
+				status: 200,
 			};
 			const mockSecondResponse = {
 				data: {
 					listings: [mockListingResponse.data.listings[0]],
 					nextToken: undefined,
 				},
+				headers: {},
+				status: 200,
 			};
 
 			mockedSpApiRequest.makeRequest
@@ -300,6 +306,8 @@ describe('Listings Operations', () => {
 					},
 				],
 			},
+			headers: {},
+			status: 200,
 		};
 
 		beforeEach(() => {
@@ -373,6 +381,8 @@ describe('Listings Operations', () => {
 						},
 					],
 				},
+				headers: {},
+				status: 200,
 			};
 
 			mockedSpApiRequest.makeRequest.mockResolvedValue(asinSearchResponse);

@@ -4,7 +4,6 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeOperationError,
-	NodeConnectionType,
 } from 'n8n-workflow';
 
 import { ordersOperations, ordersFields } from './descriptions/Orders.description';
@@ -19,6 +18,10 @@ import { financeOperations, financeFields } from './descriptions/Finance.descrip
 import { executeFinanceOperation } from './operations/Finance.operations';
 import { analyticsOperations, analyticsFields } from './descriptions/Analytics.description';
 import { executeAnalyticsOperation } from './operations/Analytics.operations';
+import { dataKioskOperations, dataKioskFields } from './descriptions/DataKiosk.description';
+import { executeDataKioskOperation } from './operations/DataKiosk.operations';
+import { reportsOperations, reportsFields } from './descriptions/Reports.description';
+import { executeReportsOperation } from './operations/Reports.operations';
 
 export class AmazonSellingPartner implements INodeType {
 	description: INodeTypeDescription = {
@@ -32,8 +35,8 @@ export class AmazonSellingPartner implements INodeType {
 		defaults: {
 			name: 'Amazon Selling Partner',
 		},
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: ['main'] as any,
+		outputs: ['main'] as any,
 		credentials: [
 			{
 				name: 'amazonSpApi',
@@ -56,22 +59,22 @@ export class AmazonSellingPartner implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'Orders',
+						name: 'Order',
 						value: 'orders',
 						description: 'Manage and retrieve order information',
 					},
 					{
-						name: 'Invoices',
+						name: 'Invoice',
 						value: 'invoices',
 						description: 'Download GST and VAT invoice reports',
 					},
 					{
-						name: 'Shipments',
+						name: 'Shipment',
 						value: 'shipments',
 						description: 'Confirm or update shipment information',
 					},
 					{
-						name: 'Listings',
+						name: 'Listing',
 						value: 'listings',
 						description: 'List and manage product listings (ASINs/SKUs)',
 					},
@@ -81,9 +84,14 @@ export class AmazonSellingPartner implements INodeType {
 						description: 'Retrieve financial events, wallet transactions, and payment data',
 					},
 					{
-						name: 'Analytics',
-						value: 'analytics',
-						description: 'Get sales and traffic analytics data by ASIN using Data Kiosk or Reports API',
+						name: 'Data Kiosk',
+						value: 'dataKiosk',
+						description: 'Submit GraphQL queries and download results via Data Kiosk',
+					},
+					{
+						name: 'Report',
+						value: 'reports',
+						description: 'Generate and download SP-API business and returns reports',
 					},
 				],
 				default: 'orders',
@@ -100,6 +108,10 @@ export class AmazonSellingPartner implements INodeType {
 			...financeFields,
 			...analyticsOperations,
 			...analyticsFields,
+			...dataKioskOperations,
+			...dataKioskFields,
+			...reportsOperations,
+			...reportsFields,
 		],
 	};
 
@@ -113,10 +125,11 @@ export class AmazonSellingPartner implements INodeType {
 		try {
 			for (let i = 0; i < items.length; i++) {
 				switch (resource) {
-					case 'orders':
+					case 'orders': {
 						const orderResults = await executeOrdersOperation.call(this, operation, i);
 						returnData.push(...orderResults);
 						break;
+					}
 					case 'invoices':
 						let invoiceResults: INodeExecutionData[] = [];
 						switch (operation) {
@@ -147,8 +160,17 @@ export class AmazonSellingPartner implements INodeType {
 						returnData.push(...financeResults);
 						break;
 					case 'analytics':
+						// Analytics now only supports validateAccess operation
 						const analyticsResults = await executeAnalyticsOperation.call(this, operation, i);
 						returnData.push(...analyticsResults);
+						break;
+					case 'dataKiosk':
+						const dataKioskResults = await executeDataKioskOperation.call(this, operation, i);
+						returnData.push(...dataKioskResults);
+						break;
+					case 'reports':
+						const reportsResults = await executeReportsOperation.call(this, operation, i);
+						returnData.push(...reportsResults);
 						break;
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);

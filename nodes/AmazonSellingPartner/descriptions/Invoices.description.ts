@@ -298,7 +298,7 @@ export const invoicesFields: INodeProperties[] = [
 		default: {},
 		options: [
 			{
-				displayName: 'Max Poll Time (minutes)',
+				displayName: 'Max Poll Time (Minutes)',
 				name: 'maxPollTimeMinutes',
 				type: 'number',
 				default: 10,
@@ -309,7 +309,7 @@ export const invoicesFields: INodeProperties[] = [
 				},
 			},
 			{
-				displayName: 'Poll Interval (seconds)',
+				displayName: 'Poll Interval (Seconds)',
 				name: 'pollIntervalSeconds',
 				type: 'number',
 				default: 30,

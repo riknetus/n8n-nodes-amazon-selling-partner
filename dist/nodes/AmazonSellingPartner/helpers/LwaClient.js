@@ -28,12 +28,14 @@ class LwaClient {
     }
     static async fetchAccessToken(credentials) {
         try {
-            const response = await axios_1.default.post(this.TOKEN_ENDPOINT, {
+            // Construct form-urlencoded data
+            const formData = new URLSearchParams({
                 grant_type: 'refresh_token',
                 refresh_token: credentials.lwaRefreshToken,
                 client_id: credentials.lwaClientId,
                 client_secret: credentials.lwaClientSecret,
-            }, {
+            });
+            const response = await axios_1.default.post(this.TOKEN_ENDPOINT, formData.toString(), {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'User-Agent': 'n8n-amazon-sp-api/1.0.0',
@@ -45,11 +47,23 @@ class LwaClient {
         catch (error) {
             if (axios_1.default.isAxiosError(error) && error.response) {
                 const { status, data } = error.response;
-                throw new n8n_workflow_1.NodeOperationError({}, `LWA authentication failed (${status}): ${data.error_description || data.error || 'Unknown error'}`, {
-                    description: 'Check your LWA credentials and ensure they are valid and not expired',
+                // Log detailed error info for debugging
+                if (!process.env.JEST_SILENT_LOGS) {
+                    console.error('LWA Token Request Failed:', {
+                        status,
+                        data,
+                        requestUrl: this.TOKEN_ENDPOINT,
+                        clientId: credentials.lwaClientId,
+                    });
+                }
+                throw new n8n_workflow_1.NodeOperationError({}, `LWA authentication failed (${status}): ${data.error_description || data.error || JSON.stringify(data)}`, {
+                    description: 'Check your LWA credentials and ensure they are valid and not expired. See server logs for details.',
                 });
             }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            if (!process.env.JEST_SILENT_LOGS) {
+                console.error('LWA Token Request Error (non-HTTP):', errorMessage);
+            }
             throw new n8n_workflow_1.NodeOperationError({}, `LWA request failed: ${errorMessage}`);
         }
     }

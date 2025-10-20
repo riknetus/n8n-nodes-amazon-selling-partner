@@ -6,7 +6,7 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 import { LwaClient } from './LwaClient';
-import { SigV4Signer } from './SigV4Signer';
+import { RdtClient, RestrictedResource } from './RdtClient';
 import { RateLimiter } from '../core/RateLimiter';
 import { ErrorHandler } from '../core/ErrorHandler';
 import { metricsCollector } from '../core/MetricsCollector';
@@ -21,6 +21,7 @@ interface SpApiRequestOptions {
 	body?: any;
 	headers?: Record<string, string>;
 	responseType?: 'json' | 'stream' | 'text';
+	restrictedResources?: RestrictedResource[];
 }
 
 interface SpApiResponse<T = any> {
@@ -42,11 +43,8 @@ export class SpApiRequest {
 		try {
 			const credentials = await executeFunctions.getCredentials('amazonSpApi');
 			
-			// Check if we should use AWS signing
-			const useAwsSigning = this.shouldUseAwsSigning(credentials);
-			
-			// Security validation (modified for optional AWS credentials)
-			const credentialValidation = this.validateCredentials(credentials, useAwsSigning);
+			// Security validation (LWA-only)
+			const credentialValidation = this.validateCredentials(credentials);
 			if (!credentialValidation.isValid) {
 				auditLogger.logCredentialUsage(nodeId, 'amazonSpApi', false, {
 					errors: credentialValidation.errors,
@@ -104,50 +102,49 @@ export class SpApiRequest {
 				});
 			}
 
-			// Apply rate limiting using group-based rate limits
-			const rateLimitGroup = getEndpointGroup(options.endpoint);
+			// Apply rate limiting using group-based rate limits (method-aware)
+			const rateLimitGroup = getEndpointGroup(options.method, options.endpoint);
 			await this.rateLimiter.waitForToken(rateLimitGroup);
 
-			// Get LWA access token
-			const accessToken = await LwaClient.getAccessToken(credentials);
-			auditLogger.logAuthentication(nodeId, 'LWA', true, { endpoint: options.endpoint });
+			// Get access token (LWA or RDT based on restricted resources)
+			let accessToken: string;
+			let authType: string;
+			
+			if (options.restrictedResources && options.restrictedResources.length > 0) {
+				accessToken = await RdtClient.getRestrictedAccessToken(credentials, options.restrictedResources);
+				authType = 'RDT';
+			} else {
+				accessToken = await LwaClient.getAccessToken(credentials);
+				authType = 'LWA';
+			}
+			
+			auditLogger.logAuthentication(nodeId, authType, true, { endpoint: options.endpoint });
 
 			// Prepare headers
+			const acceptHeader = (options.responseType === 'stream' || options.responseType === 'text')
+				? '*/*'
+				: 'application/json';
 			const headers = {
-				'Accept': options.responseType === 'json' ? 'application/json' : '*/*',
+				'Accept': acceptHeader,
 				'Content-Type': 'application/json',
 				'User-Agent': 'n8n-amazon-sp-api/1.0.0',
 				'x-amz-access-token': accessToken,
 				...options.headers,
 			};
 
-			// Conditionally sign request with AWS SigV4
-			let finalHeaders = headers;
-			if (useAwsSigning) {
-				try {
-					const signedHeaders = await SigV4Signer.signRequest(
-						options.method,
-						url.toString(),
-						headers,
-						options.body ? JSON.stringify(options.body) : undefined,
-						credentials
-					);
-					finalHeaders = { ...headers, ...signedHeaders };
-					auditLogger.logAuthentication(nodeId, 'AWS_SigV4', true, { endpoint: options.endpoint });
-				} catch (error) {
-					auditLogger.logAuthentication(nodeId, 'AWS_SigV4', false, { 
-						endpoint: options.endpoint,
-						error: error instanceof Error ? error.message : 'Unknown error'
-					});
-					throw new NodeOperationError(
-						executeFunctions.getNode(),
-						`AWS SigV4 signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-						{
-							description: 'Check your AWS credentials or disable AWS signing in advanced options'
-						}
-					);
-				}
-			}
+			// AWS SigV4 signing disabled: enforce LWA-only authentication
+			const finalHeaders = headers;
+
+			// Log request details for debugging
+			console.log('SP-API Request:', {
+				method: options.method,
+				url: url.toString(),
+				endpoint: options.endpoint,
+				baseUrl,
+				hasAccessToken: !!accessToken,
+				region: credentials.awsRegion,
+				marketplace: credentials.primaryMarketplace,
+			});
 
 			// Configure axios request based on response type
 			const axiosConfig: any = {
@@ -174,26 +171,37 @@ export class SpApiRequest {
 			// Update rate limiter with response headers
 			this.rateLimiter.updateFromHeaders(rateLimitGroup, response.headers as Record<string, string>);
 
-			// Handle non-success responses
-			if (response.status >= 400) {
-				// Log failed API access
-				auditLogger.logApiAccess(nodeId, options.endpoint, false, {
-					status: response.status,
-					duration,
-					method: options.method,
-					useAwsSigning,
-				});
-				metricsCollector.recordApiRequest(options.endpoint, duration, false, `HTTP_${response.status}`);
-				
-				throw await ErrorHandler.handleApiError(response);
-			}
+		// Handle non-success responses
+		if (response.status >= 400) {
+			// Log detailed error response for debugging
+			console.error('SP-API Request Failed:', {
+				status: response.status,
+				statusText: response.statusText,
+				url: url.toString(),
+				endpoint: options.endpoint,
+				method: options.method,
+				baseUrl,
+				responseData: response.data,
+				requestHeaders: headers,
+				responseHeaders: response.headers,
+			});
+			
+			// Log failed API access
+			auditLogger.logApiAccess(nodeId, options.endpoint, false, {
+				status: response.status,
+				duration,
+				method: options.method,
+			});
+			metricsCollector.recordApiRequest(options.endpoint, duration, false, `HTTP_${response.status}`);
+			
+			throw await ErrorHandler.handleApiError(response);
+		}
 
 			// Log successful API access
 			auditLogger.logApiAccess(nodeId, options.endpoint, true, {
 				status: response.status,
 				duration,
 				method: options.method,
-				useAwsSigning,
 			});
 			metricsCollector.recordApiRequest(options.endpoint, duration, true);
 
@@ -231,31 +239,8 @@ export class SpApiRequest {
 		}
 	}
 
-	private static shouldUseAwsSigning(credentials: ICredentialDataDecryptedObject): boolean {
-		// Check if user explicitly enabled AWS signing
-		const advancedOptions = credentials.advancedOptions as any;
-		if (advancedOptions?.useAwsSigning) {
-			return true;
-		}
-
-		// Check if AWS credentials are provided (backwards compatibility)
-		const hasAwsCredentials = credentials.awsAccessKeyId && credentials.awsSecretAccessKey;
-		if (hasAwsCredentials) {
-			return true;
-		}
-
-		// Check if AWS credentials are in advanced options
-		const hasAdvancedAwsCredentials = advancedOptions?.awsAccessKeyId && advancedOptions?.awsSecretAccessKey;
-		if (hasAdvancedAwsCredentials) {
-			return true;
-		}
-
-		return false;
-	}
-
 	private static validateCredentials(
-		credentials: ICredentialDataDecryptedObject, 
-		useAwsSigning: boolean
+		credentials: ICredentialDataDecryptedObject
 	): { isValid: boolean; errors: string[] } {
 		const errors: string[] = [];
 
@@ -268,20 +253,6 @@ export class SpApiRequest {
 		}
 		if (!credentials.lwaRefreshToken) {
 			errors.push('LWA Refresh Token is required');
-		}
-
-		// Validate AWS credentials only if AWS signing is enabled
-		if (useAwsSigning) {
-			const advancedOptions = credentials.advancedOptions as any;
-			const awsAccessKeyId = credentials.awsAccessKeyId || advancedOptions?.awsAccessKeyId;
-			const awsSecretAccessKey = credentials.awsSecretAccessKey || advancedOptions?.awsSecretAccessKey;
-
-			if (!awsAccessKeyId) {
-				errors.push('AWS Access Key ID is required when AWS signing is enabled');
-			}
-			if (!awsSecretAccessKey) {
-				errors.push('AWS Secret Access Key is required when AWS signing is enabled');
-			}
 		}
 
 		return {

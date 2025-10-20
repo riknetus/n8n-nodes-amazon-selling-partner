@@ -14,6 +14,10 @@ const Finance_description_1 = require("./descriptions/Finance.description");
 const Finance_operations_1 = require("./operations/Finance.operations");
 const Analytics_description_1 = require("./descriptions/Analytics.description");
 const Analytics_operations_1 = require("./operations/Analytics.operations");
+const DataKiosk_description_1 = require("./descriptions/DataKiosk.description");
+const DataKiosk_operations_1 = require("./operations/DataKiosk.operations");
+const Reports_description_1 = require("./descriptions/Reports.description");
+const Reports_operations_1 = require("./operations/Reports.operations");
 class AmazonSellingPartner {
     description = {
         displayName: 'Amazon Selling Partner',
@@ -26,8 +30,8 @@ class AmazonSellingPartner {
         defaults: {
             name: 'Amazon Selling Partner',
         },
-        inputs: ["main" /* NodeConnectionType.Main */],
-        outputs: ["main" /* NodeConnectionType.Main */],
+        inputs: ['main'],
+        outputs: ['main'],
         credentials: [
             {
                 name: 'amazonSpApi',
@@ -50,22 +54,22 @@ class AmazonSellingPartner {
                 noDataExpression: true,
                 options: [
                     {
-                        name: 'Orders',
+                        name: 'Order',
                         value: 'orders',
                         description: 'Manage and retrieve order information',
                     },
                     {
-                        name: 'Invoices',
+                        name: 'Invoice',
                         value: 'invoices',
                         description: 'Download GST and VAT invoice reports',
                     },
                     {
-                        name: 'Shipments',
+                        name: 'Shipment',
                         value: 'shipments',
                         description: 'Confirm or update shipment information',
                     },
                     {
-                        name: 'Listings',
+                        name: 'Listing',
                         value: 'listings',
                         description: 'List and manage product listings (ASINs/SKUs)',
                     },
@@ -75,9 +79,14 @@ class AmazonSellingPartner {
                         description: 'Retrieve financial events, wallet transactions, and payment data',
                     },
                     {
-                        name: 'Analytics',
-                        value: 'analytics',
-                        description: 'Get sales and traffic analytics data by ASIN using Data Kiosk or Reports API',
+                        name: 'Data Kiosk',
+                        value: 'dataKiosk',
+                        description: 'Submit GraphQL queries and download results via Data Kiosk',
+                    },
+                    {
+                        name: 'Report',
+                        value: 'reports',
+                        description: 'Generate and download SP-API business and returns reports',
                     },
                 ],
                 default: 'orders',
@@ -94,6 +103,10 @@ class AmazonSellingPartner {
             ...Finance_description_1.financeFields,
             ...Analytics_description_1.analyticsOperations,
             ...Analytics_description_1.analyticsFields,
+            ...DataKiosk_description_1.dataKioskOperations,
+            ...DataKiosk_description_1.dataKioskFields,
+            ...Reports_description_1.reportsOperations,
+            ...Reports_description_1.reportsFields,
         ],
     };
     async execute() {
@@ -104,10 +117,11 @@ class AmazonSellingPartner {
         try {
             for (let i = 0; i < items.length; i++) {
                 switch (resource) {
-                    case 'orders':
+                    case 'orders': {
                         const orderResults = await Orders_operations_1.executeOrdersOperation.call(this, operation, i);
                         returnData.push(...orderResults);
                         break;
+                    }
                     case 'invoices':
                         let invoiceResults = [];
                         switch (operation) {
@@ -138,8 +152,17 @@ class AmazonSellingPartner {
                         returnData.push(...financeResults);
                         break;
                     case 'analytics':
+                        // Analytics now only supports validateAccess operation
                         const analyticsResults = await Analytics_operations_1.executeAnalyticsOperation.call(this, operation, i);
                         returnData.push(...analyticsResults);
+                        break;
+                    case 'dataKiosk':
+                        const dataKioskResults = await DataKiosk_operations_1.executeDataKioskOperation.call(this, operation, i);
+                        returnData.push(...dataKioskResults);
+                        break;
+                    case 'reports':
+                        const reportsResults = await Reports_operations_1.executeReportsOperation.call(this, operation, i);
+                        returnData.push(...reportsResults);
                         break;
                     default:
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
