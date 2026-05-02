@@ -57,7 +57,10 @@ class SpApiRequest {
                     console.warn('Security validator not available, skipping parameter validation');
                 }
             }
-            const baseUrl = this.getBaseUrl(credentials);
+            if (!options.marketplace) {
+                options.marketplace = "us-east-1";
+            }
+            const baseUrl = this.getBaseUrl(credentials, options.marketplace);
             // Build full URL
             const url = new url_1.URL(options.endpoint, baseUrl);
             if (options.query) {
@@ -219,13 +222,12 @@ class SpApiRequest {
             errors,
         };
     }
-    static getBaseUrl(credentials) {
+    static getBaseUrl(credentials, region = "us-east-1") {
         const advancedOptions = credentials.advancedOptions;
         const customEndpoint = credentials.spApiEndpoint || advancedOptions?.spApiEndpoint;
         if (customEndpoint) {
             return customEndpoint;
         }
-        const region = credentials.awsRegion;
         const environment = credentials.environment;
         const endpoints = {
             'us-east-1': environment === 'sandbox'

@@ -12,7 +12,6 @@ interface CachedToken {
 	accessToken: string;
 	expiresAt: number;
 }
-
 export class LwaClient {
 	private static tokenCache = new Map<string, CachedToken>();
 	private static readonly TOKEN_ENDPOINT = 'https://api.amazon.com/auth/o2/token';

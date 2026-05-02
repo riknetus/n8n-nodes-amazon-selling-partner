@@ -14,6 +14,8 @@ const Finance_description_1 = require("./descriptions/Finance.description");
 const Finance_operations_1 = require("./operations/Finance.operations");
 const Analytics_description_1 = require("./descriptions/Analytics.description");
 const Analytics_operations_1 = require("./operations/Analytics.operations");
+const Prices_description_1 = require("./descriptions/Prices.description");
+const Prices_operations_1 = require("./operations/Prices.operations");
 class AmazonSellingPartner {
     description = {
         displayName: 'Amazon Selling Partner',
@@ -79,6 +81,11 @@ class AmazonSellingPartner {
                         value: 'analytics',
                         description: 'Get sales and traffic analytics data by ASIN using Data Kiosk or Reports API',
                     },
+                    {
+                        name: "Prices",
+                        value: "prices",
+                        description: "Get all prices TEST NODE"
+                    }
                 ],
                 default: 'orders',
             },
@@ -94,6 +101,8 @@ class AmazonSellingPartner {
             ...Finance_description_1.financeFields,
             ...Analytics_description_1.analyticsOperations,
             ...Analytics_description_1.analyticsFields,
+            ...Prices_description_1.priceOperations,
+            ...Prices_description_1.priceFields,
         ],
     };
     async execute() {
@@ -140,6 +149,10 @@ class AmazonSellingPartner {
                     case 'analytics':
                         const analyticsResults = await Analytics_operations_1.executeAnalyticsOperation.call(this, operation, i);
                         returnData.push(...analyticsResults);
+                        break;
+                    case "prices":
+                        const pricesResults = await Prices_operations_1.executePricesOperation.call(this, operation, i);
+                        returnData.push(...pricesResults);
                         break;
                     default:
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);

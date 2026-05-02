@@ -21,6 +21,7 @@ interface SpApiRequestOptions {
 	body?: any;
 	headers?: Record<string, string>;
 	responseType?: 'json' | 'stream' | 'text';
+	marketplace?: string;
 }
 
 interface SpApiResponse<T = any> {
@@ -88,8 +89,10 @@ export class SpApiRequest {
 				}
 			}
 
-			const baseUrl = this.getBaseUrl(credentials);
-			
+			if (!options.marketplace){
+				options.marketplace = "us-east-1"
+			}
+			const baseUrl = this.getBaseUrl(credentials, options.marketplace);
 			// Build full URL
 			const url = new URL(options.endpoint, baseUrl);
 			if (options.query) {
@@ -290,7 +293,7 @@ export class SpApiRequest {
 		};
 	}
 
-	private static getBaseUrl(credentials: ICredentialDataDecryptedObject): string {
+	private static getBaseUrl(credentials: ICredentialDataDecryptedObject, region: string = "us-east-1"): string {
 		const advancedOptions = credentials.advancedOptions as any;
 		const customEndpoint = credentials.spApiEndpoint || advancedOptions?.spApiEndpoint;
 		
@@ -298,7 +301,7 @@ export class SpApiRequest {
 			return customEndpoint as string;
 		}
 
-		const region = credentials.awsRegion as string;
+
 		const environment = credentials.environment as string;
 
 		const endpoints: Record<string, string> = {

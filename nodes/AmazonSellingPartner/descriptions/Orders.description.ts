@@ -206,4 +206,4 @@ export const ordersFields: INodeProperties[] = [
 		},
 		description: 'Whether to return all order items by automatically handling pagination',
 	},
-]; 
+];

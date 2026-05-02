@@ -19,6 +19,8 @@ import { financeOperations, financeFields } from './descriptions/Finance.descrip
 import { executeFinanceOperation } from './operations/Finance.operations';
 import { analyticsOperations, analyticsFields } from './descriptions/Analytics.description';
 import { executeAnalyticsOperation } from './operations/Analytics.operations';
+import { priceFields, priceOperations } from './descriptions/Prices.description';
+import { executePricesOperation } from './operations/Prices.operations';
 
 export class AmazonSellingPartner implements INodeType {
 	description: INodeTypeDescription = {
@@ -85,6 +87,11 @@ export class AmazonSellingPartner implements INodeType {
 						value: 'analytics',
 						description: 'Get sales and traffic analytics data by ASIN using Data Kiosk or Reports API',
 					},
+					{
+						name: "Prices",
+						value: "prices",
+						description: "Get all prices TEST NODE"
+					}
 				],
 				default: 'orders',
 			},
@@ -100,6 +107,8 @@ export class AmazonSellingPartner implements INodeType {
 			...financeFields,
 			...analyticsOperations,
 			...analyticsFields,
+			...priceOperations,
+			...priceFields,
 		],
 	};
 
@@ -150,6 +159,10 @@ export class AmazonSellingPartner implements INodeType {
 						const analyticsResults = await executeAnalyticsOperation.call(this, operation, i);
 						returnData.push(...analyticsResults);
 						break;
+					case "prices":
+						const pricesResults = await executePricesOperation.call(this, operation, i);
+						returnData.push(...pricesResults);
+						break;
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
 				}
@@ -165,5 +178,4 @@ export class AmazonSellingPartner implements INodeType {
 		}
 	}
 
-
-} 
+}

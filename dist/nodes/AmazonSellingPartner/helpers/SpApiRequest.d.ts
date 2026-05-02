@@ -6,6 +6,7 @@ interface SpApiRequestOptions {
     body?: any;
     headers?: Record<string, string>;
     responseType?: 'json' | 'stream' | 'text';
+    marketplace?: string;
 }
 interface SpApiResponse<T = any> {
     data: T;
