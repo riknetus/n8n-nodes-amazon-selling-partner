@@ -1,6 +1,6 @@
 {
-  "name": "n8n-nodes-amazon-api-selling-partner-customized",
-  "version": "1.9.12",
+  "name": "n8n-nodes-amazon-sp-api",
+  "version": "1.9.6",
   "description": "Custom n8n node for the Amazon Selling Partner API",
   "main": "index.js",
   "scripts": {
@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cashelastest/n8n-nodes-amazon-api-selling-partner-customized.git"
+    "url": "git+https://github.com/riknetus/n8n-nodes-amazon-selling-partner.git"
   },
   "author": "n8n",
   "license": "MIT",
